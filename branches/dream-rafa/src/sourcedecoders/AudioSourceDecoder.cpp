@@ -325,13 +325,21 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
 
         int iLenDecOutPerChan = 0; // no need to use the one from the codec
         unsigned numFrames = unsigned(pAudioSuperFrame->getNumFrames());
+        cerr << "numFrames " << numFrames << endl;
         if(numFrames==0) {
-            // xHE-AAC - can't tell yet!
+            numFrames = 2;
+            int samplesPerChannelPerSuperFrame = int(pAudioSuperFrame->getSuperFrameDurationMilliseconds()) * inputSampleRate / 1000;
+            iLenDecOutPerChan = samplesPerChannelPerSuperFrame / int(numFrames);
         }
         else {
             int samplesPerChannelPerSuperFrame = int(pAudioSuperFrame->getSuperFrameDurationMilliseconds()) * inputSampleRate / 1000;
             iLenDecOutPerChan = samplesPerChannelPerSuperFrame / int(numFrames);
         }
+        cerr << "numFrames " << numFrames << endl;
+        cerr << "durationinmilisecons " << int(pAudioSuperFrame->getSuperFrameDurationMilliseconds()) << endl;
+        cerr << "inputSampleRate " << inputSampleRate << endl;
+        cerr << "samplesPerChannelPerSuperFrame " << iLenDecOutPerChan * int(numFrames) << endl;
+
 
         /* set string for GUI */
         Parameters.audiodecoder = audiodecoder;

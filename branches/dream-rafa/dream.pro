@@ -183,7 +183,8 @@ unix {
     documentation.files = linux/dream.1
     INSTALLS += documentation
     INSTALLS += target
-    CONFIG += link_pkgconfig
+    CONFIG += link_pkgconfig fdk-aac debug
+    DEBUG_MESSAGE = debug
     LIBS += -lfftw3 -lz
     SOURCES += src/linux/Pacer.cpp
     DEFINES += HAVE_DLFCN_H \
@@ -383,7 +384,7 @@ hamlib {
 }
 qwt {
     message("with Qwt")
-    QT += svg concurrent
+    QT += svg
     macx {
         INCLUDEPATH += /Library/Frameworks/qwt.framework/Headers
         LIBS += -framework qwt
