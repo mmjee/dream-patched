@@ -325,21 +325,13 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
 
         int iLenDecOutPerChan = 0; // no need to use the one from the codec
         unsigned numFrames = unsigned(pAudioSuperFrame->getNumFrames());
-        cerr << "numFrames " << numFrames << endl;
         if(numFrames==0) {
-            numFrames = 2;
-            int samplesPerChannelPerSuperFrame = int(pAudioSuperFrame->getSuperFrameDurationMilliseconds()) * inputSampleRate / 1000;
-            iLenDecOutPerChan = samplesPerChannelPerSuperFrame / int(numFrames);
+            // xHE-AAC - can't tell yet!
         }
         else {
             int samplesPerChannelPerSuperFrame = int(pAudioSuperFrame->getSuperFrameDurationMilliseconds()) * inputSampleRate / 1000;
             iLenDecOutPerChan = samplesPerChannelPerSuperFrame / int(numFrames);
         }
-        cerr << "numFrames " << numFrames << endl;
-        cerr << "durationinmilisecons " << int(pAudioSuperFrame->getSuperFrameDurationMilliseconds()) << endl;
-        cerr << "inputSampleRate " << inputSampleRate << endl;
-        cerr << "samplesPerChannelPerSuperFrame " << iLenDecOutPerChan * int(numFrames) << endl;
-
 
         /* set string for GUI */
         Parameters.audiodecoder = audiodecoder;
@@ -353,6 +345,7 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
         /* Since we do not do Mode E or correct for sample rate offsets here (yet), we do not
            have to consider larger buffers. An audio frame always corresponds to 400 ms */
         int iMaxLenResamplerOutput = int(_REAL(outputSampleRate) * 0.4 /* 400ms */  * 2 /* for stereo */ );
+        iMaxLenResamplerOutput *= 2; // to prevent buffer overruns with xHE-AAC
 
         if(inputSampleRate != outputSampleRate) {
             _REAL rRatio = _REAL(outputSampleRate) / _REAL(inputSampleRate);
@@ -361,7 +354,11 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
             ResampleObjR.Init(iLenDecOutPerChan, rRatio);
         }
 
-        int iResOutBlockSize = outputSampleRate * iLenDecOutPerChan / inputSampleRate;
+        int iResOutBlockSize;
+        if (inputSampleRate == 0)
+            iResOutBlockSize = iLenDecOutPerChan;
+        else
+            iResOutBlockSize = outputSampleRate * iLenDecOutPerChan / inputSampleRate;
 
         //cerr << "output block size per channel " << iResOutBlockSize << " = samples " << iLenDecOutPerChan << " * " << Parameters.GetAudSampleRate() << " / " << iAudioSampleRate << endl;
 

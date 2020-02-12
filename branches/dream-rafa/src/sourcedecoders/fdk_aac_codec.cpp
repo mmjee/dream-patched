@@ -86,12 +86,12 @@ FdkAacCodec::CanDecode(CAudioParam::EAudCod eAudioCoding)
         }
         return true;
     }
-
+#ifdef HAVE_USAC
     if(eAudioCoding == CAudioParam::AC_xHE_AAC) {
         if((linfo.flags & CAPF_AAC_USAC) != 0)
             return true;
     }
-
+#endif
     return false;
 }
 
@@ -109,10 +109,12 @@ static void logAOT(const CStreamInfo& info) {
     case AUDIO_OBJECT_TYPE::AOT_DRM_SURROUND:
         cerr << " AAC+Surround";
         break;
+#ifdef HAVE_USAC
     case AUDIO_OBJECT_TYPE::AOT_USAC:
     case AUDIO_OBJECT_TYPE::AOT_DRM_USAC:
         cerr << " xHE-AAC";
         break;
+#endif
     default:
         cerr << "unknown object type";
     }
@@ -224,12 +226,6 @@ FdkAacCodec::DecOpen(const CAudioParam& AudioParam, int& iAudioSampleRate)
         iDefaultSampleRate = iDefaultSampleRate * 2;
     }
 
-//    if(bUsac)
-//        iDefaultSampleRate = 48000;
-//        iDefaultSampleRate = 32000;
-//    else
-//        iDefaultSampleRate = 48000;
-
     if(hDecoder == nullptr) {
         iAudioSampleRate = iDefaultSampleRate;
         return false;
@@ -239,7 +235,7 @@ FdkAacCodec::DecOpen(const CAudioParam& AudioParam, int& iAudioSampleRate)
     type9Size = unsigned(type9.size());
     t9 = &type9[0];
 
-    cerr << "type9 " << hex; for(size_t i=0; i<type9Size; i++) cerr << int(type9[i]) << " "; cerr << dec << endl;
+    //cerr << "type9 " << hex; for(size_t i=0; i<type9Size; i++) cerr << int(type9[i]) << " "; cerr << dec << endl;
     AAC_DECODER_ERROR err = aacDecoder_ConfigRaw (hDecoder, &t9, &type9Size);
     if(err == AAC_DEC_OK) {
         CStreamInfo *pinfo = aacDecoder_GetStreamInfo(hDecoder);
@@ -260,20 +256,10 @@ FdkAacCodec::DecOpen(const CAudioParam& AudioParam, int& iAudioSampleRate)
         }
 
         if(pinfo->aot == AUDIO_OBJECT_TYPE::AOT_USAC) bUsac = true;
+#ifdef HAVE_USAC
         else if(pinfo->aot == AUDIO_OBJECT_TYPE::AOT_DRM_USAC) bUsac = true;
+#endif
         else bUsac = false;
-
-    cerr << " channels coded " << pinfo->aacNumChannels
-         << " coded sample rate " << pinfo->aacSampleRate
-         << " channels " <<  pinfo->numChannels
-         << " channel config " << pinfo->channelConfig
-         << " sample rate " << pinfo->sampleRate
-         << " extended sample rate " << pinfo->extSamplingRate
-         << " samples per frame " << pinfo->aacSamplesPerFrame
-         << " decoded audio frame size " << pinfo->frameSize
-         << " flags " << hex << pinfo->flags << dec;
-    cerr << " channel 0 type " << int(pinfo->pChannelType[0]) << " index " << int(pinfo->pChannelIndices[0]);
-
 
         return true;
     }
@@ -315,23 +301,6 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
         //return nullptr; this breaks everything!
     }
 
-    cerr << " channels coded " << pinfo->aacNumChannels
-         << " coded sample rate " << pinfo->aacSampleRate
-         << " channels " <<  pinfo->numChannels
-         << " channel config " << pinfo->channelConfig
-         << " sample rate " << pinfo->sampleRate
-         << " extended sample rate " << pinfo->extSamplingRate
-         << " samples per frame " << pinfo->aacSamplesPerFrame
-         << " decoded audio frame size " << pinfo->frameSize
-         << " flags " << hex << pinfo->flags << dec;
-    cerr << " channel 0 type " << int(pinfo->pChannelType[0]) << " index " << int(pinfo->pChannelIndices[0]);
-
-    // force some defaults for USAC
-//    if (bUsac)
-//    {
-//        pinfo->aacNumChannels = 1;
-//        pinfo->numChannels = 2;
-//    }
     //cerr << "Decode";
     //logAOT(*pinfo);
     //logFlags(*pinfo);
@@ -340,17 +309,17 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
 
     if(pinfo->aacNumChannels == 0) {
         cerr << "zero output channels: " << err << endl;
-        // return CAudioCodec::DECODER_ERROR_UNKNOWN;
+        //return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
     else {
-        // cerr << pinfo->aacNumChannels << " aac channels " << endl;
+        //cerr << pinfo->aacNumChannels << " aac channels " << endl;
     }
 
     if(err != AAC_DEC_OK) {
         cerr << "Fill failed: " << err << endl;
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
-    cerr << "aac decode after fill bufferSize " << bufferSize << ", bytesValid " << bytesValid << endl;
+    //cerr << "aac decode after fill bufferSize " << bufferSize << ", bytesValid " << bytesValid << endl;
     if (bytesValid != 0) {
         cerr << "Unable to feed all " << bufferSize << " input bytes, bytes left " << bytesValid << endl;
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
@@ -358,10 +327,9 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
 
     if(pinfo->numChannels == 0) {
         cerr << "zero output channels: " << err << endl;
-        // return CAudioCodec::DECODER_ERROR_UNKNOWN;
+        //return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
 
-//    size_t output_size = 6528 * 2; // // see page 27 of 201 980 v.4.1.1
     size_t output_size = unsigned(pinfo->frameSize * pinfo->numChannels);
     if(sizeof (decode_buf) < sizeof(int16_t)*output_size) {
         cerr << "can't fit output into decoder buffer" << endl;
@@ -374,16 +342,18 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
     if(err == AAC_DEC_OK) {
         double d = 0.0;
         for(size_t i=0; i<output_size; i++) d += double(decode_buf[i]);
-        cerr << "energy in good frame " << (d/output_size) << endl;
+        //cerr << "energy in good frame " << (d/output_size) << endl;
     }
     else if(err == AAC_DEC_PARSE_ERROR) {
         cerr << "error parsing bitstream." << endl;
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
+#ifdef HAVE_USAC
     else if(err == AAC_DEC_OUTPUT_BUFFER_TOO_SMALL) {
         cerr << "The provided output buffer is too small." << endl;
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
+#endif
     else if(err == AAC_DEC_OUT_OF_MEMORY) {
         cerr << "Heap returned NULL pointer. Output buffer is invalid." << endl;
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
@@ -403,7 +373,7 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
     if (pinfo->numChannels == 1)
     {
         /* Mono */
-        cerr << "mono " << pinfo->frameSize << endl;
+        // << "mono " << pinfo->frameSize << endl;
         for(int i = 0; i<pinfo->frameSize; i++) {
             left[int(i)] = _REAL(decode_buf[i]) / 2.0;
             right[int(i)] = _REAL(decode_buf[i]) / 2.0;
@@ -412,7 +382,7 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
     else
     {
         /* Stereo docs claim non-interleaved but we are getting interleaved! */
-        cerr << "stereo " << pinfo->frameSize << endl;
+        //cerr << "stereo " << iResOutBlockSize << endl;
         for(int i = 0; i<pinfo->frameSize; i++) {
             left[int(i)] = _REAL(decode_buf[2*i]);
             right[int(i)] = _REAL(decode_buf[2*i+1]);
