@@ -1,7 +1,7 @@
 Source: dream
 Section: hamradio
 Priority: optional
-Maintainer: Julian Cable <jcable@users.sourceforge.net>
+Maintainer: Rafael Diniz <rafael@riseup.net>
 Build-Depends: debhelper (>=9), make, g++, qt5-default, libqwt-qt5-dev, libfftw3-dev, libopus-dev, libsndfile-dev, libasound2-dev, libgps-dev, libpcap-dev, libhamlib-dev, libspeexdsp-dev, libqt5svg5-dev, zlib1g-dev
 Standards-Version: 3.9.8
 Homepage: https://sourceforge.net/p/drm
@@ -10,7 +10,7 @@ Homepage: https://sourceforge.net/p/drm
 
 Package: dream
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libfaad2
+Depends: ${shlibs:Depends}, ${misc:Depends}, libfdk-aac2
 Description: A software radio for AM and Digital Radio Mondiale (DRM)
  Dream is a software implementation of a Digital Radio Mondiale (DRM) receiver.
  With Dream, DRM broadcasts can be received with an SDR dongle or 
