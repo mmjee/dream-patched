@@ -63,6 +63,7 @@ bool XHEAACSuperFrame::parse(CVectorEx<_BINARY>& asf)
     CCRC CRCObject;
     CRCObject.Reset(8);
     CRCObject.AddByte((frameBorderCount << 4) | bitReservoirLevel);
+
     if(CRCObject.CheckCRC(asf.Separate(8))) {
         //cerr << endl << "superframe crc ok" << endl;
     }
@@ -70,83 +71,149 @@ bool XHEAACSuperFrame::parse(CVectorEx<_BINARY>& asf)
         //cerr << endl << "superframe crc bad but will hope the frameBorderCount is OK" << endl;
     }
     // TODO handle reservoir
-    unsigned bitResLevel = (bitReservoirLevel+1) * 384 * numChannels;
+//    unsigned bitResLevel = (bitReservoirLevel+1) * 384 * numChannels;
     unsigned directory_offset = superFrameSize - 2*frameBorderCount;
     size_t start = payload.size();
     //cerr << start << " bytes left from previous superframe" << endl;
     //cerr << "payload start " << start << " bit reservoir level " << bitReservoirLevel << " bitResLevel " << bitResLevel << " superframe size " << superFrameSize << " directory offset " << 8*directory_offset << " bits " << directory_offset << " bytes" << endl;
+
     // get the payload
-    for(size_t i=2; i<directory_offset; i++) payload.push_back(asf.Separate(8));
+    for (size_t i=2; i < directory_offset; i++) {
+        if (asf.Size() == 0) {
+            printf("DRM xHE-AAC asf UNDERRUN 1\n");
+            return false;
+        }
+        payload.push_back(asf.Separate(8));
+    }
     borders.resize(frameBorderCount);
     frameSize.resize(frameBorderCount);
-    if(frameBorderCount>0) {
+
+
+    //printf("xHE sfs=%d start=%zu diroff=%d fbc=%d ", superFrameSize, start, directory_offset, frameBorderCount);
+    if (frameBorderCount > 0) {
         // get the directory
-        for(int i=int(frameBorderCount-1); i>=0; i--) {
+        for (int i = int(frameBorderCount-1); i >= 0; i--) {
+            if (asf.Size() == 0) {
+                printf("DRM xHE-AAC asf UNDERRUN 2\n");
+                return false;
+            }
             unsigned frameBorderIndex = asf.Separate(12);
             unsigned frameBorderCountRepeat = asf.Separate(4);
-            if(frameBorderCountRepeat != frameBorderCount) {
+            if (frameBorderCountRepeat != frameBorderCount) {
                 ok = false;
             }
             //cerr << "border " << i << " of " << frameBorderCountRepeat << "/" << frameBorderCount << " starts at " << hex << frameBorderIndex << dec << endl;
             borders[unsigned(i)] = frameBorderIndex;
+            //printf("%d:%d ", i, frameBorderIndex);
         }
-        if(!ok) {
+        //printf("\n");
+        if (!ok) {
+            //printf("xHE-FBC-repeat-BAD! ");
             return false;
         }
+
         // set the borders relative to the start including the payload bytes from previous superframes
-        switch(borders[0]) {
-        case 0xffe: // delayed from previous superframe
-            //cerr << "first frame has two bytes in previous superframe" << endl;
-            if(start<2) return false;
-            borders[0] = start-2;
-            frameSize[0] = borders[0];
-            break;
-        case 0xfff: // the start of the audio frame at the last byte of the Payload section of the previous audio super frame
-            //cerr << "first frame has one byte in previous superframe" << endl;
-            if(start<1) return false;
-            borders[0] = start-1;
-            frameSize[0] = borders[0];
-            break;
-        default: // boundary in this superframe
-            borders[0] += start;
-            //if(borders[0]<2) return false;
-            //borders[0] -= 2; // header not in payload
-            frameSize[0] = borders[0];
-            //cerr << "border 0 is " << borders[0] << " bytes from start of payload" << endl;
-            break;
+        switch (borders[0]) {
+
+            case 0xffe: // delayed from previous superframe
+                //cerr << "first frame has two bytes in previous superframe" << endl;
+                if (start < 2) {
+                    //printf("xHE-0xffe! ");
+                    return false;
+                }
+                borders[0] = start-2;
+                frameSize[0] = borders[0];
+                break;
+    
+            case 0xfff: // the start of the audio frame at the last byte of the Payload section of the previous audio super frame
+                //cerr << "first frame has one byte in previous superframe" << endl;
+                if (start < 1) {
+                    //printf("xHE-0xfff! ");
+                    return false;
+                }
+                borders[0] = start-1;
+                frameSize[0] = borders[0];
+                break;
+    
+            default: // boundary in this superframe
+                borders[0] += start;
+                #if 0
+                    if (borders[0] < 2) return false;
+                    borders[0] -= 2; // header not in payload
+                #endif
+                frameSize[0] = borders[0];
+                //cerr << "border 0 is " << borders[0] << " bytes from start of payload" << endl;
+                break;
         }
-        for(unsigned i=1; i<borders.size(); i++) {
+
+        for (unsigned i=1; i < borders.size(); i++) {
             borders[i] += start;
-            // borders[i] -= 2; // header not in payload
-            unsigned bytes = borders[i]-borders[i-1];
+            #if 0
+                borders[i] -= 2; // header not in payload
+                unsigned bytes = borders[i] - borders[i-1];
+            #else
+                unsigned bytes = borders[i] - borders[i-1];
+            #endif
             frameSize[i] = bytes;
             //cerr << "border " << i << " is " << borders[i] << " bytes from start of payload" << endl;
         }
+
+        #if 0
+            printf("xHE i:fb:fsize ");
+            for (unsigned i=0; i < borders.size(); i++) {
+                printf("%d:%d:%d ", i, borders[i], frameSize[i]);
+            }
+        #endif
     } else {
-        // frameBorderCount == 0: spans entire AFS payload or bad data in header
+        // frameBorderCount == 0: spans entire ASF payload or bad data in header
+        //printf("xHE-fullspan\n");
         audioFrame.resize(0);
         return ok;
     }
-    size_t bytesInFrames = 0; for(size_t i=0; i<frameSize.size(); i++) bytesInFrames+=frameSize[i];
-    size_t next = payload.size()-bytesInFrames;
+
+    size_t bytesInFrames = 0;
+    for (size_t i=0; i < frameSize.size(); i++) bytesInFrames += frameSize[i];
+    size_t next = payload.size() - bytesInFrames;
     //cerr << "payload is " << payload.size() << " bytes of which " << bytesInFrames << " are for this superframe and " << next << " are for the next superframe" << endl;
-    // now copy into the audioFrames for simplicty
+
+    //printf("xHE payload=%zu bytesInFrames=%zu next=%zu\n", payload.size(), bytesInFrames, next);
+
+    // now copy into the audioFrames for simplicity
     size_t i=0;
     audioFrame.resize(frameBorderCount);
     audioFrame[i].resize(0);
-    while(true) {
+
+    while (true) {
+        #if 0
+            if (i >= audioFrame.size()) {
+                printf("audioFrame size: i=%d af_size=%d frameBorderCount=%d\n", (int) i, (int) audioFrame.size(), frameBorderCount);
+                exit(-1);
+            }
+            int psize = payload.size();
+            if (psize == 0) {
+                printf("payload size: i=%d af_size=%d af_size[i]=%d frameSize=%d frameBorderCount=%d\n",
+                    (int) i, (int) audioFrame.size(), audioFrame[i].size(), frameSize[i], frameBorderCount);
+                //exit(-1);
+            }
+        #endif
+
+        if (payload.empty()) {
+            printf("DRM xHE-AAC payload UNDERRUN\n");
+            return false;
+        }
         audioFrame[i].push_back(payload.front());
         payload.pop_front();
-        if(audioFrame[i].size()==frameSize[i]) {
+        if (audioFrame[i].size() == frameSize[i]) {
             i++;
-            if(i>=audioFrame.size()) break;
+            if (i >= audioFrame.size()) break;
             audioFrame[i].resize(0);
         }
     }
+
     //cerr << "remaining payload is " << payload.size() << " bytes" << endl;
-    size_t allocated = 2 + 2*frameBorderCount; // bytes of the superframe for the header and directory
-    allocated += bytesInFrames - start; // do count bytes in frames but not the ones from previous superframes
-    allocated += next; // do count bytes for next superframe
+    //size_t allocated = 2 + 2*frameBorderCount; // bytes of the superframe for the header and directory
+    //allocated += bytesInFrames - start; // do count bytes in frames but not the ones from previous superframes
+    //allocated += next; // do count bytes for next superframe
     //cerr << "allocated " << allocated << " bytes out of " << superFrameSize << " in the superframe" << endl;
     return ok;
 }
