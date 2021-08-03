@@ -1010,7 +1010,7 @@ CTagItemGeneratorGPS::GenTag(bool bIsValid, gps_data_t& gps_data)	// Long/Lat in
 		uint32_t source = 0xff; // GPS_SOURCE_NOT_AVAILABLE
 		PrepareTag(26 * SIZEOF__BYTE);
 		if(gps_data.set&STATUS_SET) {
-            switch(gps_data.fix.status) {
+            switch(gps_data.status) {
 			case 0: source = 3; break; // manual
 			case 1: source = 1; break; // gps
 			case 2: source = 2; break; // differential

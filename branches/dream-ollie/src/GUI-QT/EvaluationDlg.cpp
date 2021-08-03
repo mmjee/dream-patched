@@ -756,7 +756,7 @@ void systemevalDlg::UpdateGPS(CParameter& Parameters)
         LEDGPS->SetLight(CMultColorLED::RL_RED);
     } else {
 
-        if(gps.fix.status==0)
+        if(gps.status==0)
             LEDGPS->SetLight(CMultColorLED::RL_YELLOW);
         else
             LEDGPS->SetLight(CMultColorLED::RL_GREEN);
