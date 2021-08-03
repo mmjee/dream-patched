@@ -424,7 +424,7 @@ CHamlib::LoadSettings(CSettings & s)
 		SetHamlibModelID(model);
 	}
 
-	s.Put("Hamlib", "hamlib-model", model);
+    s.Put("Hamlib", "hamlib-model", (int)model);
 	s.Put("Hamlib", "hamlib-config", strHamlibConf);
 	s.Put("Hamlib", "settings", strSettings);
 	s.Put("Hamlib", "freqoffset", iFreqOffset);
@@ -434,7 +434,7 @@ void
 CHamlib::SaveSettings(CSettings & s)
 {
 	/* Hamlib Model ID */
-	s.Put("Hamlib", "hamlib-model", iHamlibModelID);
+    s.Put("Hamlib", "hamlib-model", (int)iHamlibModelID);
 
 	/* Hamlib configuration string */
 	stringstream ss;

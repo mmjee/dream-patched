@@ -756,7 +756,7 @@ void systemevalDlg::UpdateGPS(CParameter& Parameters)
         LEDGPS->SetLight(CMultColorLED::RL_RED);
     } else {
 
-        if(gps.status==0)
+        if(gps.fix.status==0)
             LEDGPS->SetLight(CMultColorLED::RL_YELLOW);
         else
             LEDGPS->SetLight(CMultColorLED::RL_GREEN);
@@ -789,8 +789,8 @@ void systemevalDlg::UpdateGPS(CParameter& Parameters)
     if (gps.set&TIME_SET)
     {
         struct tm * p_ts;
-        time_t tt = time_t(gps.fix.time);
-        p_ts = gmtime(&tt);
+        timespec tt = gps.fix.time;
+        p_ts = gmtime(&tt.tv_sec);
         QChar fill('0');
         qStrTime = QString("UTC: %1/%2/%3 %4:%5:%6  ")
                 .arg(1900 + p_ts->tm_year)
