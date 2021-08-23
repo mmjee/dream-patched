@@ -255,8 +255,7 @@ void CTagItemDecoderRgps::DecodeTag(CVector<_BINARY>& vecbiTag, const int iLen)
         else
             unsetenv("TZ");
 #endif
-        gps_data.fix.time.tv_sec = t;
-        gps_data.fix.time.tv_nsec = 0;
+        gps_data.fix.time = t;
         gps_data.set |= TIME_SET;
     }
 

@@ -789,8 +789,8 @@ void systemevalDlg::UpdateGPS(CParameter& Parameters)
     if (gps.set&TIME_SET)
     {
         struct tm * p_ts;
-        timespec tt = gps.fix.time;
-        p_ts = gmtime(&tt.tv_sec);
+        time_t tt = time_t(gps.fix.time);
+        p_ts = gmtime(&tt);
         QChar fill('0');
         qStrTime = QString("UTC: %1/%2/%3 %4:%5:%6  ")
                 .arg(1900 + p_ts->tm_year)
