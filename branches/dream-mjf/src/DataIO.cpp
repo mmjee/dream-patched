@@ -50,7 +50,7 @@ void CReadData::ProcessDataInternal(CParameter&)
         if(pIODevice)
         {
             qint64 n = 2*vecsSoundBuffer.Size();
-            pIODevice->read((char*)&vecsSoundBuffer[0], n);
+            pIODevice->read(reinterpret_cast<char*>(&vecsSoundBuffer[0]), n);
         }
         else
             return;
@@ -77,8 +77,8 @@ void CReadData::InitInternal(CParameter& Parameters)
 
     /* Define block-size for output, an audio frame always corresponds
        to 400 ms. We use always stereo blocks */
-    iOutputBlockSize = (int) ((_REAL) iSampleRate *
-                              (_REAL) 0.4 /* 400 ms */ * 2 /* stereo */);
+    iOutputBlockSize = int(real(iSampleRate) *
+                              real(0.4) /* 400 ms */ * 2 /* stereo */);
 
     /* Init sound interface and intermediate buffer */
     if(pSound) pSound->Init(iSampleRate, iOutputBlockSize, false);
@@ -465,8 +465,8 @@ void CWriteData::GetAudioSpec(CVector<_REAL>& vecrData,
     if (iAudSampleRate == 0)
     {
         /* Init output vectors to zero data */
-        vecrData.Init(0, (_REAL) 0.0);
-        vecrScale.Init(0, (_REAL) 0.0);
+        vecrData.Init(0, real(0.0));
+        vecrScale.Init(0, real(0.0));
         return;
     }
 
@@ -475,8 +475,8 @@ void CWriteData::GetAudioSpec(CVector<_REAL>& vecrData,
     const int iLenPowSpec = int(rLenPowSpec);
 
     /* Init output vectors */
-    vecrData.Init(iLenPowSpec, (_REAL) 0.0);
-    vecrScale.Init(iLenPowSpec, (_REAL) 0.0);
+    vecrData.Init(iLenPowSpec, real(0.0));
+    vecrScale.Init(iLenPowSpec, real(0.0));
 
     int i;
 
@@ -484,7 +484,7 @@ void CWriteData::GetAudioSpec(CVector<_REAL>& vecrData,
     Lock();
 
     /* Init vector storing the average spectrum with zeros */
-    CVector<_REAL> veccAvSpectrum(iLenPowSpec, (_REAL) 0.0);
+    CVector<_REAL> veccAvSpectrum(iLenPowSpec, real(0.0));
 
     int iCurPosInStream = 0;
     for (i = 0; i < iNumBlocksAvAudioSpec; i++)
@@ -512,12 +512,12 @@ void CWriteData::GetAudioSpec(CVector<_REAL>& vecrData,
     }
 
     /* Calculate norm constant and scale factor */
-    const _REAL rNormData = (_REAL) iNumSmpls4AudioSprectrum *
+    const _REAL rNormData = real(iNumSmpls4AudioSprectrum) *
                             iNumSmpls4AudioSprectrum * _MAXSHORT * _MAXSHORT *
                             iNumBlocksAvAudioSpec;
 
     /* Define scale factor for audio data */
-    const _REAL rFactorScale = _REAL(iMaxAudioFrequency) / iLenPowSpec / 1000;
+    const _REAL rFactorScale = real(iMaxAudioFrequency) / iLenPowSpec / 1000;
 
     /* Apply the normalization (due to the FFT) */
     for (i = 0; i < iLenPowSpec; i++)
@@ -525,11 +525,11 @@ void CWriteData::GetAudioSpec(CVector<_REAL>& vecrData,
         const _REAL rNormPowSpec = veccAvSpectrum[i] / rNormData;
 
         if (rNormPowSpec > 0)
-            vecrData[i] = (_REAL) 10.0 * log10(rNormPowSpec);
+            vecrData[i] = real(10.0) * log10(rNormPowSpec);
         else
             vecrData[i] = RET_VAL_LOG_0;
 
-        vecrScale[i] = (_REAL) i * rFactorScale;
+        vecrScale[i] = real(i) * rFactorScale;
     }
 
     /* Release resources */
@@ -664,13 +664,13 @@ void CUtilizeSDCData::InitInternal(CParameter& Parameters)
 
 /* CWriteIQFile : module for writing an IQ or IF file */
 
-CWriteIQFile::CWriteIQFile() : pFile(0), iFrequency(0), bIsRecording(false), bChangeReceived(false)
+CWriteIQFile::CWriteIQFile() : pFile(nullptr), iFrequency(0), bIsRecording(false), bChangeReceived(false)
 {
 }
 
 CWriteIQFile::~CWriteIQFile()
 {
-    if (pFile != 0)
+    if (pFile != nullptr)
         fclose(pFile);
 }
 
@@ -731,8 +731,8 @@ void CWriteIQFile::InitInternal(CParameter& Parameters)
     iHilFiltBlLen = iSymbolBlockSize;
 
     /* Init state vector for filtering with zeros */
-    rvecZReal.Init(iHilFiltBlLen, (CReal) 0.0);
-    rvecZImag.Init(iHilFiltBlLen, (CReal) 0.0);
+    rvecZReal.Init(iHilFiltBlLen, CReal(0.0));
+    rvecZImag.Init(iHilFiltBlLen, CReal(0.0));
 
     /* "+ 1" because of the Nyquist frequency (filter in frequency domain) */
     cvecBReal.Init(iHilFiltBlLen + 1);
@@ -755,19 +755,19 @@ void CWriteIQFile::InitInternal(CParameter& Parameters)
 
     /* Set filter coefficients ---------------------------------------------- */
     /* Not really necessary since bandwidth will never be changed */
-    const CReal rStartPhase = (CReal) iHilFiltBlLen * crPi * rBPNormCentOffset;
+    const CReal rStartPhase = CReal(iHilFiltBlLen) * crPi * rBPNormCentOffset;
 
     /* Copy actual filter coefficients. It is important to initialize the
        vectors with zeros because we also do a zero-padding */
-    CRealVector rvecBReal(2 * iHilFiltBlLen, (CReal) 0.0);
-    CRealVector rvecBImag(2 * iHilFiltBlLen, (CReal) 0.0);
+    CRealVector rvecBReal(2 * iHilFiltBlLen, CReal(0.0));
+    CRealVector rvecBImag(2 * iHilFiltBlLen, CReal(0.0));
     for (int i = 0; i < iHilFiltBlLen; i++)
     {
         rvecBReal[i] = vecrFilter[i] *
-                       Cos((CReal) 2.0 * crPi * rBPNormCentOffset * i - rStartPhase);
+                       Cos(CReal(2.0) * crPi * rBPNormCentOffset * i - rStartPhase);
 
         rvecBImag[i] = vecrFilter[i] *
-                       Sin((CReal) 2.0 * crPi * rBPNormCentOffset * i - rStartPhase);
+                       Sin(CReal(2.0) * crPi * rBPNormCentOffset * i - rStartPhase);
     }
 
     /* Transformation in frequency domain for fft filter */
