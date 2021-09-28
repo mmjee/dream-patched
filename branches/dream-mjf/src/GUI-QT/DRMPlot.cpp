@@ -102,17 +102,17 @@ CDRMPlot::CDRMPlot(QWidget* parent, QwtPlot* SuppliedPlot) :
 	plot->setAxisFont(QwtPlot::xBottom, axisfont);
 	plot->setAxisFont(QwtPlot::yLeft, axisfont);
 	plot->setAxisFont(QwtPlot::yRight, axisfont);
-	QwtText title;
-	title.setFont(titlefont);
-	plot->setTitle(title);
+    QwtText title;
+    title.setFont(titlefont);
+    plot->setTitle(title);
 
 	/* Axis titles */
-	bottomTitle.setFont(axisfont);
-	plot->setAxisTitle(QwtPlot::xBottom, bottomTitle);
-	leftTitle.setFont(axisfont);
-	plot->setAxisTitle(QwtPlot::yLeft, leftTitle);
-	rightTitle.setFont(axisfont);
-	plot->setAxisTitle(QwtPlot::yRight, rightTitle);
+    bottomTitle.setFont(axisfont);
+    plot->setAxisTitle(QwtPlot::xBottom, bottomTitle);
+    leftTitle.setFont(axisfont);
+    plot->setAxisTitle(QwtPlot::yLeft, leftTitle);
+    rightTitle.setFont(axisfont);
+    plot->setAxisTitle(QwtPlot::yRight, rightTitle);
 
 	/* Global frame */
 	plot->setFrameStyle(QFrame::Plain|QFrame::NoFrame);
@@ -554,6 +554,7 @@ void CDRMPlot::SetData(CVector<_REAL>& vecrData1, CVector<_REAL>& vecrData2,
 void CDRMPlot::SetData(QwtPlotCurve& curve, CVector<_COMPLEX>& veccData)
 {
 	const int size = veccData.Size();
+    double* dblptr = nullptr;
 	if (size)
 	{
 		vector<double> r(size), im(size);
@@ -565,7 +566,7 @@ void CDRMPlot::SetData(QwtPlotCurve& curve, CVector<_COMPLEX>& veccData)
 		curve.SETDATA(&r[0], &im[0], size);
 	}
 	else
-		curve.SETDATA(nullptr, nullptr, 0);
+        curve.SETDATA(dblptr, dblptr, 0);
 }
 
 void CDRMPlot::SetData(CVector<_COMPLEX>& veccData)
@@ -585,6 +586,7 @@ void CDRMPlot::SetData(CVector<_COMPLEX>& veccMSCConst,
 void CDRMPlot::PlotDefaults()
 {
 	/* Set default value of plot items */
+    double* dblptr = nullptr;
 	Canvas = QPixmap();
 	Image = QImage();
 	curve1.detach();
@@ -596,15 +598,15 @@ void CDRMPlot::PlotDefaults()
 	vcurvegrid.detach();
 	main1curve.detach();
 	main2curve.detach();
-	curve1.SETDATA(nullptr, nullptr, 0);
-	curve2.SETDATA(nullptr, nullptr, 0);
-	curve3.SETDATA(nullptr, nullptr, 0);
-	curve4.SETDATA(nullptr, nullptr, 0);
-	curve5.SETDATA(nullptr, nullptr, 0);
-	hcurvegrid.SETDATA(nullptr, nullptr, 0);
-	vcurvegrid.SETDATA(nullptr, nullptr, 0);
-	main1curve.SETDATA(nullptr, nullptr, 0);
-	main2curve.SETDATA(nullptr, nullptr, 0);
+    curve1.SETDATA(dblptr, dblptr, 0);
+    curve2.SETDATA(dblptr, dblptr, 0);
+    curve3.SETDATA(dblptr, dblptr, 0);
+    curve4.SETDATA(dblptr, dblptr, 0);
+    curve5.SETDATA(dblptr, dblptr, 0);
+    hcurvegrid.SETDATA(dblptr, dblptr, 0);
+    vcurvegrid.SETDATA(dblptr, dblptr, 0);
+    main1curve.SETDATA(dblptr, dblptr, 0);
+    main2curve.SETDATA(dblptr, dblptr, 0);
 #if QWT_VERSION < 0x060000
 	curve1.setSymbol(QwtSymbol());
     curve2.setSymbol(QwtSymbol());
@@ -789,12 +791,13 @@ void CDRMPlot::SetupTranFct()
 void CDRMPlot::SetupAudioSpec(bool bAudioDecoder)
 {
 	/* Init chart for audio spectrum */
+    double* dblptr = nullptr;
 	if (bAudioDecoder)
 		plot->setTitle(tr("Audio Spectrum"));
 	else
 	{
 		plot->setTitle(tr("No audio decoding possible"));
-		main1curve.SETDATA(nullptr, nullptr, 0);
+        main1curve.SETDATA(dblptr, dblptr, 0);
 	}
 	plot->enableAxis(QwtPlot::yRight, false);
 	plot->setAxisTitle(QwtPlot::xBottom, tr("Frequency [kHz]"));
@@ -1160,6 +1163,7 @@ void CDRMPlot::SetupInpPSD(bool bAnalog)
 void CDRMPlot::SetBWMarker(const _REAL rBWCenter, const _REAL rBWWidth)
 {
 	double	dX[2], dY[2];
+    double* dblptr = nullptr;
 	/* Insert marker for filter bandwidth if required */
 	if (rBWWidth != (_REAL) 0.0)
 	{
@@ -1175,7 +1179,7 @@ void CDRMPlot::SetBWMarker(const _REAL rBWCenter, const _REAL rBWWidth)
 		curve2.SETDATA(dX, dY, 2);
 	}
 	else
-		curve2.SETDATA(nullptr, nullptr, 0);
+        curve2.SETDATA(dblptr, dblptr, 0);
 }
 
 void CDRMPlot::SetupInpSpecWaterf()
