@@ -62,7 +62,7 @@ AACCodecParams::AACCodecParams(CSettings& Settings, CParameter& Parameters,
 
 	Parameters.Lock();
 	/* Channels */
-    switch (Parameters.Service[iShortID].AudioParam.eAudioMode)
+    switch (Parameters.Service[size_t(iShortID)].AudioParam.eAudioMode)
 	{
     case CAudioParam::AM_MONO:
 		RadioButtonChannelsMono->setChecked(true);
@@ -77,7 +77,7 @@ AACCodecParams::AACCodecParams(CSettings& Settings, CParameter& Parameters,
         ;
     }
     /* Sample Rate */
-    switch (Parameters.Service[iShortID].AudioParam.eAudioSamplRate)
+    switch (Parameters.Service[size_t(iShortID)].AudioParam.eAudioSamplRate)
 	{
     case CAudioParam::AS_12KHZ:
         RadioButton12kHz->setChecked(true);
@@ -85,9 +85,16 @@ AACCodecParams::AACCodecParams(CSettings& Settings, CParameter& Parameters,
     case CAudioParam::AS_24KHZ:
         RadioButton24kHz->setChecked(true);
 		break;
+    case CAudioParam::AS_9_6KHZ:
+    case CAudioParam::AS_16KHZ:
+    case CAudioParam::AS_19_2KHZ:
+    case CAudioParam::AS_32KHZ:
+    case CAudioParam::AS_38_4KHZ:
+    case CAudioParam::AS_48KHZ:
+        break;
 	}
     /* options */
-    CheckBoxSBR->setCheckState(Parameters.Service[iShortID].AudioParam.eSBRFlag?Qt::Checked:Qt::Unchecked);
+    CheckBoxSBR->setCheckState(Parameters.Service[size_t(iShortID)].AudioParam.eSBRFlag?Qt::Checked:Qt::Unchecked);
 	Parameters.Unlock();
 
 	/* Connections */
@@ -132,24 +139,24 @@ void AACCodecParams::reject()
 void AACCodecParams::OnButtonGroupChannels(int iID)
 {
     Parameters.Lock();
-    Parameters.Service[iShortID].AudioParam.eAudioMode = static_cast<CAudioParam::EAudioMode>(iID);
-	Parameters.Service[iShortID].AudioParam.bParamChanged = true;
+    Parameters.Service[size_t(iShortID)].AudioParam.eAudioMode = static_cast<CAudioParam::EAudioMode>(iID);
+    Parameters.Service[size_t(iShortID)].AudioParam.bParamChanged = true;
 	Parameters.Unlock();
 }
 
 void AACCodecParams::OnButtonGroupSampleRate(int iID)
 {
 	Parameters.Lock();
-    Parameters.Service[iShortID].AudioParam.eAudioSamplRate =  static_cast<CAudioParam::EAudSamRat>(iID);
-	Parameters.Service[iShortID].AudioParam.bParamChanged = true;
+    Parameters.Service[size_t(iShortID)].AudioParam.eAudioSamplRate =  static_cast<CAudioParam::EAudSamRat>(iID);
+    Parameters.Service[size_t(iShortID)].AudioParam.bParamChanged = true;
 	Parameters.Unlock();
 }
 
 void AACCodecParams::OnCheckBoxSBR(bool checked)
 {
 	Parameters.Lock();
-    Parameters.Service[iShortID].AudioParam.eSBRFlag = checked?CAudioParam::SB_USED:CAudioParam::SB_NOT_USED;
-	Parameters.Service[iShortID].AudioParam.bParamChanged = true;
+    Parameters.Service[size_t(iShortID)].AudioParam.eSBRFlag = checked?CAudioParam::SB_USED:CAudioParam::SB_NOT_USED;
+    Parameters.Service[size_t(iShortID)].AudioParam.bParamChanged = true;
 	Parameters.Unlock();
 }
 
