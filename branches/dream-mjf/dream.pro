@@ -153,7 +153,9 @@ macx {
     packagesExist(speex) {
         CONFIG += libspeexdsp
     }
-    packagesExist(libgps) {
+    #packagesExist(libgps) {
+    exists(/usr/include/gps.h) | \
+    exists(/usr/local/include/gps.h) {
         CONFIG += gps
     }
     packagesExist(fdk-aac) {
@@ -162,6 +164,9 @@ macx {
 }
 linux-* {
   LIBS += -ldl -lrt
+  packagesExist(fdk-aac) {
+     CONFIG += fdk-aac
+  }
 }
 android {
     CONFIG += sound fdk-aac
@@ -309,7 +314,7 @@ win32 {
   }
 }
 fdk-aac {
-     DEFINES += HAVE_LIBFDK_AAC
+     DEFINES += HAVE_LIBFDK_AAC HAVE_USAC
      LIBS += -lfdk-aac
      HEADERS += src/sourcedecoders/fdk_aac_codec.h
      SOURCES += src/sourcedecoders/fdk_aac_codec.cpp
@@ -423,8 +428,8 @@ pulseaudio {
     SOURCES += src/sound/drm_pulseaudio.cpp
     unix {
         macx {
-            INCLUDEPATH += /usr/local/Cellar/pulseaudio/12.2/include
-            LIBS += -L/usr/local/Cellar/pulseaudio/12.2/lib -lpulse
+            INCLUDEPATH += /usr/local/opt/pulseaudio/include
+            LIBS += -L/usr/local/opt/pulseaudio/lib -lpulse
         }
         else {
             PKGCONFIG += libpulse
