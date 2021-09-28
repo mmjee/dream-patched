@@ -62,6 +62,7 @@
 #include <qwt_symbol.h>
 #if QWT_VERSION >= 0x060000
 # include <qwt_picker_machine.h>
+# include <qwt_text.h>
 #endif
 
 /* Other includes */
@@ -366,7 +367,7 @@ protected:
 	ECodScheme		eLastMSCCodingScheme;
 	bool		bLastAudioDecoder;
 
-	QwtText			leftTitle, rightTitle, bottomTitle;
+    QwtText			leftTitle, rightTitle, bottomTitle;
 
 	QwtPlotCurve	main1curve, main2curve;
 	QwtPlotCurve	curve1, curve2, curve3, curve4, curve5;
