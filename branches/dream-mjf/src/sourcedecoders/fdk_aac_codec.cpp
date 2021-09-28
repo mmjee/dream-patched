@@ -101,13 +101,13 @@ static void logAOT(const CStreamInfo& info) {
         cerr << " AAC";
         break;
     case AUDIO_OBJECT_TYPE::AOT_DRM_SBR:
-        cerr << " AAC+SBR";
+        cerr << " AAC-SBR";
         break;
     case AUDIO_OBJECT_TYPE::AOT_DRM_MPEG_PS:
-        cerr << " AAC+SBR+PS";
+        cerr << " AAC-SBR-PS";
         break;
     case AUDIO_OBJECT_TYPE::AOT_DRM_SURROUND:
-        cerr << " AAC+Surround";
+        cerr << " AAC-Surround";
         break;
 #ifdef HAVE_USAC
     case AUDIO_OBJECT_TYPE::AOT_USAC:
@@ -152,8 +152,32 @@ static void logAOT(const CStreamInfo& info) {
 
 static void logFlags(const CStreamInfo& info) {
 
+    if((info.flags & AC_SCALABLE) == AC_SCALABLE) {
+        cerr << "+SCL";
+    }
+    if((info.flags & AC_ELD) == AC_ELD) {
+        cerr << "+ELD";
+    }
+    if((info.flags & AC_LD) == AC_LD) {
+        cerr << "+LD";
+    }
+    if((info.flags & AC_ER) == AC_ER) {
+        cerr << "+ER";
+    }
+    if((info.flags & AC_BSAC) == AC_BSAC) {
+        cerr << "+BSAC";
+    }
     if((info.flags & AC_USAC) == AC_USAC) {
         cerr << "+USAC";
+    }
+    if((info.flags & AC_RSV603DA) == AC_RSV603DA) {
+        cerr << "+RSVD60-3DA";
+    }
+    if((info.flags & AC_HDAAC) == AC_HDAAC) {
+        cerr << "+HD";
+    }
+    if((info.flags & AC_RSVD50) == AC_RSVD50) {
+        cerr << "+RSVD50";
     }
     if((info.flags & AC_SBR_PRESENT) == AC_SBR_PRESENT) {
         cerr << "+SBR";
@@ -166,6 +190,30 @@ static void logFlags(const CStreamInfo& info) {
     }
     if((info.flags & AC_MPS_PRESENT) == AC_MPS_PRESENT) {
         cerr << "+MPS";
+    }
+    if((info.flags & AC_DRM) == AC_DRM) {
+        cerr << "+DRM";
+    }
+    if((info.flags & AC_MPEGD_RES) == AC_MPEGD_RES) {
+        cerr << "+MPEGD";
+    }
+    if((info.flags & AC_SAOC_PRESENT) == AC_SAOC_PRESENT) {
+        cerr << "+SAOC";
+    }
+    if((info.flags & AC_DAB) == AC_DAB) {
+        cerr << "+DAB";
+    }
+    if((info.flags & AC_ELD_DOWNSCALE) == AC_ELD_DOWNSCALE) {
+        cerr << "+ELD-DSCL";
+    }
+    if((info.flags & AC_LD_MPS) == AC_LD_MPS) {
+        cerr << "+LD-MPS";
+    }
+    if((info.flags & AC_DRC_PRESENT) == AC_DRC_PRESENT) {
+        cerr << "+DRC";
+    }
+    if((info.flags & AC_USAC_SCFGI3) == AC_USAC_SCFGI3) {
+        cerr << "+USAC3";
     }
     if((info.flags & AC_INDEP) == AC_INDEP) {
         cerr << " (independent)";
@@ -198,7 +246,7 @@ FdkAacCodec::DecOpen(const CAudioParam& AudioParam, int& iAudioSampleRate)
         return false;
 
     vector<uint8_t> type9 = AudioParam.getType9Bytes();
-    type9Size = type9.size();
+    type9Size = uint(type9.size());
     t9 = &type9[0];
 
     //cerr << "type9 " << hex; for(size_t i=0; i<type9Size; i++) cerr << int(type9[i]) << " "; cerr << dec << endl;
@@ -237,7 +285,7 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
     UINT bufferSize;
     if(bUsac) {
         pData = const_cast<uint8_t*>(&audio_frame[0]);
-        bufferSize = audio_frame.size();
+        bufferSize = uint(audio_frame.size());
     }
     else {
         data.resize(audio_frame.size()+1);
@@ -247,7 +295,7 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
             data[i + 1] = audio_frame[i];
 
         pData = &data[0];
-        bufferSize = data.size();
+        bufferSize = uint(data.size());
     }
     UINT bytesValid = bufferSize;
 
@@ -292,14 +340,14 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
         //return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
 
-    size_t output_size = pinfo->frameSize * pinfo->numChannels;
+    size_t output_size = size_t(pinfo->frameSize) * ulong(pinfo->numChannels);
     if(sizeof (decode_buf) < sizeof(int16_t)*output_size) {
         cerr << "can't fit output into decoder buffer" << endl;
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
 
     memset(decode_buf, 0, sizeof(int16_t)*output_size);
-    err = aacDecoder_DecodeFrame(hDecoder, decode_buf, output_size, 0);
+    err = aacDecoder_DecodeFrame(hDecoder, decode_buf, int(output_size), 0);
 
     if(err == AAC_DEC_OK) {
         double d = 0.0;
@@ -567,7 +615,7 @@ FdkAacCodec::EncSetBitrate(int iBitRate)
 {
     if (hEncoder != nullptr)
 	{
-        aacEncoder_SetParam(hEncoder, AACENC_BITRATE, iBitRate);
+        aacEncoder_SetParam(hEncoder, AACENC_BITRATE, uint(iBitRate));
     }
 }
 
@@ -585,7 +633,7 @@ FdkAacCodec::fileName(const CParameter& Parameters) const
 
 //    Parameters.Lock(); // TODO CAudioSourceDecoder::InitInternal() already have the lock
     if (Parameters.
-            Service[Parameters.GetCurSelAudioService()].AudioParam.
+            Service[ulong(Parameters.GetCurSelAudioService())].AudioParam.
             eAudioSamplRate == CAudioParam::AS_12KHZ)
     {
         ss << "12kHz_";
@@ -594,7 +642,7 @@ FdkAacCodec::fileName(const CParameter& Parameters) const
         ss << "24kHz_";
 
     switch (Parameters.
-            Service[Parameters.GetCurSelAudioService()].
+            Service[ulong(Parameters.GetCurSelAudioService())].
             AudioParam.eAudioMode)
     {
     case CAudioParam::AM_MONO:
@@ -612,7 +660,7 @@ FdkAacCodec::fileName(const CParameter& Parameters) const
     }
 
     if (Parameters.
-            Service[Parameters.GetCurSelAudioService()].AudioParam.
+            Service[ulong(Parameters.GetCurSelAudioService())].AudioParam.
             eSBRFlag == CAudioParam::SB_USED)
     {
         ss << "_sbr";
