@@ -257,6 +257,9 @@ unix:!cross_compile {
        CONFIG += speexdsp
       }
     }
+    exists(/usr/local/include/SoapySDR) {
+       CONFIG += soapysdr
+    }
 }
 win32:cross_compile {
   message(win32 cross compile)
@@ -445,6 +448,12 @@ pulseaudio {
     }
     message("with pulseaudio")
 }
+soapysdr {
+    DEFINES += USE_SOAPYSDR
+    LIBS += -lSoapySDR
+    message("with SoapySDR")
+}
+
 HEADERS += \
     src/AMDemodulation.h \
     src/AMSSDemodulation.h \
@@ -576,7 +585,9 @@ HEADERS += \
     src/resample/cspectrumresample.h \
     src/resample/caudioresample.h \
     src/sourcedecoders/reverb.h \
-    src/sourcedecoders/caudioreverb.h
+    src/sourcedecoders/caudioreverb.h \
+    src/sound/drm_soapySDR.h \
+    src/tuner.h
 SOURCES += \
     src/AMDemodulation.cpp \
     src/AMSSDemodulation.cpp \
@@ -692,7 +703,9 @@ SOURCES += \
     src/resample/cspectrumresample.cpp \
     src/resample/caudioresample.cpp \
     src/sourcedecoders/reverb.cpp \
-    src/sourcedecoders/caudioreverb.cpp
+    src/sourcedecoders/caudioreverb.cpp \
+    src/sound/drm_soapySDR.cpp \
+    src/tuner.cpp
 
 contains(QT,core) {
     HEADERS += \

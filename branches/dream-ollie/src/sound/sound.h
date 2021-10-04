@@ -47,7 +47,9 @@ typedef CSoundOutJack CSoundOut;
 
 # ifdef USE_PULSEAUDIO
 #  include "drm_pulseaudio.h"
-typedef CSoundInPulse CSoundIn;
+//typedef CSoundInPulse CSoundIn;
+#include "drm_soapySDR.h"
+typedef CSoapySDRIn CSoundIn;
 typedef CSoundOutPulse CSoundOut;
 # endif
 

@@ -41,6 +41,7 @@
 #include "IQInputFilter.h"
 #include "UpsampleFilter.h"
 #include "matlib/MatlibSigProToolbox.h"
+#include "../tuner.h"
 
 using namespace std;
 
@@ -259,6 +260,15 @@ void CReceiveData::ProcessDataInternal(CParameter& Parameters)
         /* The actual upscaling, currently only 2X is supported */
         InterpFIR_2X(2, &vecsSoundBuffer[0], vecf_ZL, vecf_YL, vecf_B);
         InterpFIR_2X(2, &vecsSoundBuffer[1], vecf_ZR, vecf_YR, vecf_B);
+    }
+    else if (iDownscaleRatio > 1)
+    {
+        /* The actual downscaling, currently only 2X is supported */
+        DecimFIR_2X(2, &vecsSoundBuffer[0], vecf_ZL, vecf_YL, vecf_B);
+        DecimFIR_2X(2, &vecsSoundBuffer[1], vecf_ZR, vecf_YR, vecf_B);
+    }
+    if (iUpscaleRatio > 1 || iDownscaleRatio >1)
+    {
 
         /* Write data to output buffer. Do not set the switch command inside
            the for-loop for efficiency reasons */
@@ -529,6 +539,7 @@ void CReceiveData::InitInternal(CParameter& Parameters)
     /* Get signal sample rate */
     iSampleRate = Parameters.GetSigSampleRate();
     iUpscaleRatio = Parameters.GetSigUpscaleRatio();
+    iDownscaleRatio = 2; // TODO read from params
     Parameters.Unlock();
 
     const int iOutputBlockAlignment = iOutputBlockSize & 3;
@@ -540,7 +551,7 @@ void CReceiveData::InitInternal(CParameter& Parameters)
 
 
         bool bChanged = false;
-        int wantedBufferSize = iOutputBlockSize * 2 / iUpscaleRatio; // samples
+        int wantedBufferSize = iOutputBlockSize * 2 * iDownscaleRatio / iUpscaleRatio; // samples
 
 #ifdef QT_MULTIMEDIA_LIB
         if(pSound) { // must be sound file
@@ -558,7 +569,7 @@ void CReceiveData::InitInternal(CParameter& Parameters)
         }
 
 #else
-        bChanged = (pSound==nullptr)?true:pSound->Init(iSampleRate / iUpscaleRatio, wantedBufferSize, true);
+        bChanged = (pSound==nullptr)?true:pSound->Init(iSampleRate * iDownscaleRatio / iUpscaleRatio, wantedBufferSize, true);
 #endif
         /* Clear input data buffer on change samplerate change */
         if (bChanged)
@@ -581,6 +592,22 @@ void CReceiveData::InitInternal(CParameter& Parameters)
             vecf_YL.resize(unsigned(iOutputBlockSize));
             vecf_YR.resize(unsigned(iOutputBlockSize));
         }
+        else if (iDownscaleRatio > 1)
+        {
+            const int taps = (NUM_TAPS_DOWNSAMPLE_FILT + 3) & ~3;
+            vecf_B.resize(taps, 0.0f);
+            for (unsigned i = 0; i < NUM_TAPS_DOWNSAMPLE_FILT; i++)
+                vecf_B[i] = float(dDownsampleFilt[i] / iDownscaleRatio);
+            if (bChanged)
+            {
+                vecf_ZL.resize(0);
+                vecf_ZR.resize(0);
+            }
+            vecf_ZL.resize(unsigned(iOutputBlockSize * 2 + taps), 0.0f);
+            vecf_ZR.resize(unsigned(iOutputBlockSize *2 + taps), 0.0f);
+            vecf_YL.resize(unsigned(iOutputBlockSize));
+            vecf_YR.resize(unsigned(iOutputBlockSize));
+        }
         else
         {
             vecf_B.resize(0);
@@ -591,7 +618,7 @@ void CReceiveData::InitInternal(CParameter& Parameters)
         }
 
         /* Init buffer size for taking stereo input */
-        vecsSoundBuffer.Init(iOutputBlockSize * 2 / iUpscaleRatio);
+        vecsSoundBuffer.Init(iOutputBlockSize * 2 * iDownscaleRatio / iUpscaleRatio);
 
         /* Init signal meter */
         SignalLevelMeter.Init(0);
@@ -703,6 +730,55 @@ void CReceiveData::InterpFIR_2X(const int channels, _SAMPLE* X, vector<float>& Z
     }
 }
 
+void CReceiveData::DecimFIR_2X(const int channels, _SAMPLE* X, vector<float>& Z, vector<float>& Y, vector<float>& B)
+{
+    /*
+        2X decimating filter.
+    */
+    int i, j;
+    const int B_len = int(B.size());
+    const int Z_len = int(Z.size());
+    const int Y_len = int(Y.size());
+    const int Y_len_2 = Y_len * 2;
+    float *B_beg_ptr = &B[0];
+    float *Z_beg_ptr = &Z[0];
+    float *Y_ptr = &Y[0];
+    float *B_end_ptr, *B_ptr, *Z_ptr;
+    float y0, y1, y2, y3;
+
+    /* Check for size and alignment requirement */
+    if ((B_len & 3) || Z_len != (B_len + Y_len_2))
+        return;
+
+    /* Copy the old history at the end */
+    for (i = B_len-1; i >= 0; i--)
+        Z_beg_ptr[Y_len_2 + i] = Z_beg_ptr[i];
+
+    /* Copy the new sample at the beginning of the history */
+    for (i = 0, j = 0; i < Y_len_2; i++, j+=channels)
+        Z_beg_ptr[Y_len_2 - i - 1] = X[j];
+
+    /* The actual lowpass filtering using FIR */
+    for (i = Y_len_2-2; i >= 0; i-=2)
+    {
+        B_end_ptr  = B_beg_ptr + B_len;
+        B_ptr      = B_beg_ptr;
+        Z_ptr      = Z_beg_ptr + i;
+        y0 = y1 = y2 = y3 = 0.0f;
+        while (B_ptr != B_end_ptr)
+        {
+            y0 = y0 + B_ptr[0] * Z_ptr[0];
+            y1 = y1 + B_ptr[1] * Z_ptr[1];
+            y2 = y2 + B_ptr[2] * Z_ptr[2];
+            y3 = y3 + B_ptr[3] * Z_ptr[3];
+
+            B_ptr += 4;
+            Z_ptr += 4;
+        }
+        *Y_ptr++ = y0 + y1 + y2 + y3;
+    }
+}
+
 /*
     Convert Real to I/Q frequency when bInvert is false
     Convert I/Q to Real frequency when bInvert is true
@@ -802,4 +878,11 @@ void CReceiveData::emitRSCIData(CParameter& Parameters)
 
     spectrumAnalyser.CalculatePSDInterferenceTag(Parameters, vecrData);
 }
+
+CTuner * CReceiveData::GetTuner()
+{
+    fprintf(stderr, "CReceiveData::GetTuner() called, pSound=%x\n", pSound);
+    return dynamic_cast<CTuner *>(pSound);
+}
+
 

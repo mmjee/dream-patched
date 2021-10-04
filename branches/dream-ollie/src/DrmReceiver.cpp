@@ -71,9 +71,7 @@ CDRMReceiver::CDRMReceiver(CSettings* nPsettings) : CDRMTransceiver(),
     rInitResampleOffset((_REAL) 0.0),
     iBwAM(10000), iBwLSB(5000), iBwUSB(5000), iBwCW(150), iBwFM(6000),
     time_keeper(0),
-#ifdef HAVE_LIBHAMLIB
-    pRig(nullptr),
-#endif
+    pTuner(nullptr),
     PlotManager(), iPrevSigSampleRate(0),Parameters(*(new CParameter())), pSettings(nPsettings)
 {
     Parameters.SetReceiver(this);
@@ -190,12 +188,20 @@ CDRMReceiver::SetInputDevice(string s)
     }
     switch(t) {
     case FileTyper::pcm:
+    {
         /* SetSyncInput to false, can be modified by pUpstreamRSCI */
         InputResample.SetSyncInput(false);
         SyncUsingPil.SetSyncInput(false);
         TimeSync.SetSyncInput(false);
         ReceiveData.SetSoundInterface(device); // audio input
+        CTuner *pTuner = ReceiveData.GetTuner();
+        fprintf(stderr, "Read pTuner = %x\n", pTuner);
+        if (pTuner)
+        {
+                SetTuner(pTuner);
+        }
         break;
+    }
     case FileTyper::unrecognised: // includes rsi network
     case FileTyper::pcap:
     case FileTyper::file_framing:
@@ -1155,6 +1161,8 @@ CDRMReceiver::InitsForAllModules()
     AudSoDecBuf.Clear();
     AMAudioBuf.Clear();
     AMSoEncBuf.Clear();
+
+    //this->SetIQRecording(true);
 }
 
 /* -----------------------------------------------------------------------------
@@ -1326,12 +1334,8 @@ void CDRMReceiver::SetFrequency(int iNewFreqkHz)
         pUpstreamRSCI->SetFrequency(iNewFreqkHz);
     }
 
-#ifdef HAVE_LIBHAMLIB
-# ifdef QT_CORE_LIB // TODO should not have dependency to qt here
-    if(pRig)
-        pRig->SetFrequency(iNewFreqkHz);
-# endif
-#endif
+    if(pTuner)
+        pTuner->SetFrequency(iNewFreqkHz);
 #if 0
     {
         FCD_MODE_ENUM fme;

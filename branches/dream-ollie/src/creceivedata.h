@@ -62,6 +62,8 @@
    I think the RSCI spec is slightly wrong - using 150 windows consumes just over 400ms, 149 would be exact */
 #define INPUT_DATA_VECTOR_SIZE (NUM_AV_BLOCKS_PSD_RSI * (LEN_PSD_AV_EACH_BLOCK_RSI-PSD_OVERLAP_RSI)+PSD_OVERLAP_RSI)
 
+class CTuner;
+
 enum EInChanSel {CS_LEFT_CHAN, CS_RIGHT_CHAN, CS_MIX_CHAN, CS_SUB_CHAN, CS_IQ_POS,
                    CS_IQ_NEG, CS_IQ_POS_ZERO, CS_IQ_NEG_ZERO, CS_IQ_POS_SPLIT, CS_IQ_NEG_SPLIT
                   };
@@ -111,6 +113,8 @@ public:
                      const int iNumAvBlocksPSD = NUM_AV_BLOCKS_PSD,
                      const int iPSDOverlap = 0);
 
+    CTuner *GetTuner(void);
+
 protected:
     CSignalLevelMeter		SignalLevelMeter;
 
@@ -130,6 +134,7 @@ protected:
     bool                    bFippedSpectrum;
 
     int                     iUpscaleRatio;
+    int                     iDownscaleRatio;
     std::vector<float>		vecf_B, vecf_YL, vecf_YR, vecf_ZL, vecf_ZR;
 
     EInChanSel			eInChanSelection;
@@ -151,6 +156,7 @@ protected:
     virtual void ProcessDataInternal(CParameter& Parameters);
 
     void InterpFIR_2X(const int channels, _SAMPLE* X, std::vector<float>& Z, std::vector<float>& Y, std::vector<float>& B);
+    void DecimFIR_2X(const int channels, _SAMPLE* X, std::vector<float>& Z, std::vector<float>& Y, std::vector<float>& B);
     void emitRSCIData(CParameter& Parameters);
 };
 
