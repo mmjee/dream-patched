@@ -236,7 +236,7 @@ CAudioFileIn::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking)
 }
 
 bool
-CAudioFileIn::Read(CVector<short>& psData)
+CAudioFileIn::Read(CVector<short>& psData, CParameter &Parameters)
 {
     if (pacer)
         pacer->wait();

@@ -113,7 +113,16 @@ CPacketSocketNative::SendPacket(const vector < _BYTE > &vecbydata, uint32_t, uin
 		}
     }
     else
-        (void)send(s, (char*)&vecbydata[0], vecbydata.size(), 0);
+    {
+        int result = send(s, (char*)&vecbydata[0], vecbydata.size(), 0);
+        if (result<0)
+        {
+            cerr << "send() returned " << result <<endl;
+            close(s);
+            s = INVALID_SOCKET;
+            SetDestination(dest);
+        }
+    }
 }
 
 vector<string>
@@ -172,6 +181,7 @@ CPacketSocketNative::SetDestination(const string & strNewAddr)
         break;
     default:
         bAddressOK = false;
+        cerr << "Address not ok" << endl;
     }
     if (udp)
     {
@@ -195,6 +205,7 @@ CPacketSocketNative::SetDestination(const string & strNewAddr)
             s = socket(AF_INET, SOCK_STREAM, 0);
         int n = connect(s, (sockaddr*)&HostAddrOut, sizeof(HostAddrOut));
         bAddressOK = n==0;
+        cerr<<"connect() returned "<<n<<"; errno="<<errno<<endl;
     }
     return bAddressOK;
 }
@@ -237,6 +248,7 @@ CPacketSocketNative::SetOrigin(const string & strNewAddr)
     if (strNewAddr == "-")
     {
         udp = false;
+        sourceAddr.sin_family = AF_INET;
         if (s == INVALID_SOCKET)
             s = socket(AF_INET, SOCK_STREAM, 0);
         return true;
@@ -369,7 +381,7 @@ CPacketSocketNative::pollStream()
 {
     vector < _BYTE > vecbydata(MAX_SIZE_BYTES_NETW_BUF);
     /* Read block from network interface */
-    int iNumBytesRead = ::recv(s, (char *) &vecbydata[0], MAX_SIZE_BYTES_NETW_BUF, 0);
+    int iNumBytesRead = ::recv(s, (char *) &vecbydata[0], MAX_SIZE_BYTES_NETW_BUF, MSG_DONTWAIT);
     if (iNumBytesRead > 0)
     {
         /* Decode the incoming packet */

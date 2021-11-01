@@ -852,7 +852,7 @@ bool CSoundInPulse::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocki
     return bChanged;
 }
 
-bool CSoundInPulse::Read(CVector<_SAMPLE>& psData)
+bool CSoundInPulse::Read(CVector<_SAMPLE>& psData, CParameter &Parameters)
 {
 #ifdef ENABLE_STDIN_STDOUT
     /* Stdin support */

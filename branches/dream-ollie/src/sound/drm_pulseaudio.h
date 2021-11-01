@@ -100,7 +100,7 @@ public:
     std::string GetVersion() { return pa_get_library_version(); }
 
     bool        Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking);
-    bool        Read(CVector<_SAMPLE>& psData);
+    bool        Read(CVector<_SAMPLE>& psData, CParameter &Parameters);
     void        Close();
 #ifdef CLOCK_DRIFT_ADJ_ENABLED
     void        SetCommonParamPtr(pa_common *cp_ptr) { cp = cp_ptr; }

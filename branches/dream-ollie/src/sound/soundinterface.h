@@ -32,6 +32,8 @@
 #include "selectioninterface.h"
 #include "../util/Vector.h"
 
+class CParameter;
+
 class CSoundInInterface : public CSelectionInterface
 {
 public:
@@ -39,7 +41,7 @@ public:
 
     /* sound card interface - used by ReadData */
     virtual bool Init(int iSampleRate, int iNewBufferSize, bool bNewBlocking)=0;
-    virtual bool Read(CVector<short>& psData)=0;
+    virtual bool Read(CVector<short>& psData, CParameter& Parameters)=0;
     virtual void     Close()=0;
 	virtual std::string	GetVersion() = 0;
 

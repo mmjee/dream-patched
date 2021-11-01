@@ -40,7 +40,7 @@ public:
     virtual bool	Init(int, int, bool) {
         return true;
     }
-    virtual bool	Read(CVector<short>&) {
+    virtual bool	Read(CVector<short>&, CParameter &Parameters) {
         return false;
     }
     virtual void Enumerate(std::vector<std::string>&choices, std::vector<std::string>& desc, std::string&) {

@@ -86,5 +86,12 @@ FileTyper::type FileTyper::resolve(const string& str)
         if(strcmp(c, "AF")==0) return raw_af;
         if(strcmp(c, "PF")==0) return raw_pft;
     }
+    string ext;
+    size_t p = s.rfind('.');
+    if (p != string::npos)
+        ext = s.substr(p+1);
+    if (ext.length()>=2 &&(ext.substr(0,2) == "iq" || ext.substr(0,2) == "IQ"))
+        return pcm;
+
     return unrecognised;
 }

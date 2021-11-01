@@ -14,7 +14,7 @@ public:
     virtual ~CSoapySDRIn();
     // CSoundInInterface methods
     virtual bool Init(int iSampleRate, int iNewBufferSize, bool bNewBlocking);
-    virtual bool Read(CVector<short>& psData);
+    virtual bool Read(CVector<short>& psData, CParameter &Parameters);
     virtual void     Close();
     virtual std::string	GetVersion();
 

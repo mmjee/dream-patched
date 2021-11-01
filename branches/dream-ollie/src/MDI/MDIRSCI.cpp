@@ -378,6 +378,7 @@ void CDownstreamDI::GetNextPacket(CSingleBuffer<_BINARY>&)
 bool
 CDownstreamDI::AddSubscriber(const string& dest, const char profile, const string& origin)
 {
+    cerr<<"CDownstreamDI::AddSubscriber("<<dest<<","<<profile<<","<<origin<<")"<<endl;
 	CRSISubscriber* subs = nullptr;
 	/* heuristic to test for file or socket - TODO - better syntax */
 	size_t p = dest.find_first_not_of("TPtp0123456789.:");

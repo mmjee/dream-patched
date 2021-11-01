@@ -41,7 +41,7 @@
 * MSC data                                                                    *
 \******************************************************************************/
 /* Transmitter -------------------------------------------------------------- */
-void CReadData::ProcessDataInternal(CParameter&)
+void CReadData::ProcessDataInternal(CParameter& Parameters)
 {
     /* Get data from sound interface */
     if (pSound == nullptr)
@@ -60,7 +60,7 @@ void CReadData::ProcessDataInternal(CParameter&)
     }
     else
     {
-        pSound->Read(vecsSoundBuffer);
+        pSound->Read(vecsSoundBuffer, Parameters);
     }
     /* Write data to output buffer */
     for (int i = 0; i < iOutputBlockSize; i++)

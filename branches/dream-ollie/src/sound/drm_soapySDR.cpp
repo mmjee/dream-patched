@@ -12,6 +12,8 @@
 
 #include <iostream>
 
+#include "../Parameter.h"
+
 // Constructor(s)
 CSoapySDRIn::CSoapySDRIn() : currentDev(""), iSampleRate(96000), iBufferSize(0), iFrequency(0), pDevice(nullptr), pStream(nullptr)
 {
@@ -72,7 +74,7 @@ bool CSoapySDRIn::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking
 
 }
 
-bool CSoapySDRIn::Read(CVector<short>& psData)
+bool CSoapySDRIn::Read(CVector<short>& psData, CParameter &Parameter)
 {
     void *buffs[] = {&psData[0]};
     int flags;
@@ -80,13 +82,19 @@ bool CSoapySDRIn::Read(CVector<short>& psData)
     int elementsRemaining = iBufferSize/2;
     while (elementsRemaining>0)
     {
-        //fprintf(stderr, "about to readStream %d from device. iBufferSize=%d\n", elementsRemaining, iBufferSize);
         buffs[0]={&psData[iBufferSize-2*elementsRemaining]};
         int elementsRead = pDevice->readStream(pStream, buffs, size_t(elementsRemaining), flags, time_ns, 1e9); // divide by 2 because complex
         elementsRemaining -= elementsRead;
-        //fprintf(stderr, "readStream returned %d time_ns=%lld data {%d+j%d,%d+j%d,%d+j%d, ... %d+j%d,%d+j%d,%d+j%d}\n",elementsRead, time_ns, psData[0], psData[1], psData[2], psData[3],psData[4], psData[5], psData[iBufferSize-6],psData[iBufferSize-5],psData[iBufferSize-4],psData[iBufferSize-3],psData[iBufferSize-2],psData[iBufferSize-1]);
     }
     //fwrite(&psData[0], 2, size_t(iBufferSize), pFile);
+
+    _REAL r = - pDevice->getGain(SOAPY_SDR_RX, 0); //negative because the amount of gain should be subtracted from the signal level to get the input power
+    Parameter.Lock();
+    r += Parameter.rSigStrengthCorrection;
+    Parameter.SigStrstat.addSample(r);
+    Parameter.Unlock();
+    //emit sigstr(r);
+
     return false; // false=OK, true=bad
 }
 
