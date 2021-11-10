@@ -381,8 +381,11 @@ CDownstreamDI::AddSubscriber(const string& dest, const char profile, const strin
     cerr<<"CDownstreamDI::AddSubscriber("<<dest<<","<<profile<<","<<origin<<")"<<endl;
 	CRSISubscriber* subs = nullptr;
 	/* heuristic to test for file or socket - TODO - better syntax */
-	size_t p = dest.find_first_not_of("TPtp0123456789.:");
-	if (p != string::npos)
+    if (dest.substr(0,4)=="tcp:" || dest.substr(0,4)=="udp:")
+    {
+        subs = new CRSISubscriberSocket;
+    }
+    else if (dest.find_first_not_of("TPtp0123456789.:") != string::npos)
 	{
 		subs = new CRSISubscriberFile();
 	}

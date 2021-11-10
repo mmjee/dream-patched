@@ -154,6 +154,16 @@ CPacketSocketNative::SetDestination(const string & strNewAddr)
     AddrInterface.s_addr = htonl(INADDR_ANY);
     vector<string> parts = parseDest(strNewAddr);
 	HostAddrOut.sin_family = AF_INET; 
+    if (parts[0]=="tcp")
+    {
+        udp = false;
+        parts.erase(parts.begin());
+    }
+    else if (parts[0]=="udp")
+    {
+        udp = true;
+        parts.erase(parts.begin());
+    }
     if (tolower(parts[0][0])=='t')
     {
         udp = false;

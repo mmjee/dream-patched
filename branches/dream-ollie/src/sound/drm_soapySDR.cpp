@@ -88,7 +88,7 @@ bool CSoapySDRIn::Read(CVector<short>& psData, CParameter &Parameter)
     }
     //fwrite(&psData[0], 2, size_t(iBufferSize), pFile);
 
-    _REAL r = - pDevice->getGain(SOAPY_SDR_RX, 0); //negative because the amount of gain should be subtracted from the signal level to get the input power
+    _REAL r = pDevice->getGain(SOAPY_SDR_RX, 0); //originally negative because the amount of gain should be subtracted from the signal level to get the input power. But for SDRplay appears to go the other way, i.e. it's attenuation
     Parameter.Lock();
     r += Parameter.rSigStrengthCorrection;
     Parameter.SigStrstat.addSample(r);
