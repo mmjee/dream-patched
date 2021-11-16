@@ -25,7 +25,12 @@ public:
 
     // CTuner methods
     virtual void SetFrequency(int);
+    virtual void LoadSettings(CSettings&);
+    virtual void SaveSettings(CSettings&);
+
 protected:
+
+    void ApplyConfigString();
     std::string currentDev;
     int				iSampleRate;
     int				iBufferSize;
@@ -33,6 +38,7 @@ protected:
 
     SoapySDR::Device *pDevice;
     SoapySDR::Stream *pStream;
+    std::string strSDRConfig;
 
     FILE *pFile;
 };

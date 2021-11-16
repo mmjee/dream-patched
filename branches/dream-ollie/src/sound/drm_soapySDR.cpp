@@ -13,6 +13,7 @@
 #include <iostream>
 
 #include "../Parameter.h"
+#include "../util/Settings.h"
 
 // Constructor(s)
 CSoapySDRIn::CSoapySDRIn() : currentDev(""), iSampleRate(96000), iBufferSize(0), iFrequency(0), pDevice(nullptr), pStream(nullptr)
@@ -63,6 +64,8 @@ bool CSoapySDRIn::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking
     std::string mapping = pDevice->getFrontendMapping(SOAPY_SDR_RX);
     fprintf(stderr, "front end mapping: %s\n", mapping.c_str());
 
+    ApplyConfigString();
+
     pStream = pDevice->setupStream(SOAPY_SDR_RX, SOAPY_SDR_CS16);
 
     int res = pDevice->activateStream(pStream);
@@ -72,6 +75,53 @@ bool CSoapySDRIn::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking
         fprintf(stderr, "Activating stream succeeded\n");
     return true;
 
+}
+
+void CSoapySDRIn::LoadSettings(CSettings& settings)
+{
+    strSDRConfig= settings.Get("FrontEnd", "sdr-config");
+}
+
+void CSoapySDRIn::ApplyConfigString()
+{
+    if (strSDRConfig != "")
+    {
+        istringstream params(strSDRConfig);
+        while (!params.eof())
+        {
+            string name, value;
+            getline(params, name, '=');
+            getline(params, value, ',');
+            cout<<"setting " << name << "to" <<value <<endl;
+
+            pDevice->writeSetting(name, value);
+        }
+    }
+
+    if (!pDevice)
+    {
+        return;
+    }
+    SoapySDR::ArgInfoList argInfoList = pDevice->getSettingInfo();
+    std::string strJoiner="";
+    std::stringstream ssConfig;
+
+    for (SoapySDR::ArgInfo info : argInfoList)
+    {
+        ssConfig <<strJoiner<<info.key << "=" <<pDevice->readSetting(info.key);
+        strJoiner = ",";
+    }
+
+    strSDRConfig = ssConfig.str();
+    cout<< "strSDRConfig = "<<strSDRConfig<<endl;
+
+}
+
+void CSoapySDRIn::SaveSettings(CSettings& settings)
+{
+    // Leave untouched.
+    // TODO: read current/default settings from the SDR
+    settings.Put("FrontEnd", "sdr-config", strSDRConfig);
 }
 
 bool CSoapySDRIn::Read(CVector<short>& psData, CParameter &Parameter)
@@ -88,7 +138,7 @@ bool CSoapySDRIn::Read(CVector<short>& psData, CParameter &Parameter)
     }
     //fwrite(&psData[0], 2, size_t(iBufferSize), pFile);
 
-    _REAL r = pDevice->getGain(SOAPY_SDR_RX, 0); //originally negative because the amount of gain should be subtracted from the signal level to get the input power. But for SDRplay appears to go the other way, i.e. it's attenuation
+    _REAL r = -pDevice->getGain(SOAPY_SDR_RX, 0); // negative because the amount of gain should be subtracted from the signal level to get the input power. For SDRPlay, need to use the right version of SoapySDRPlay for this to work
     Parameter.Lock();
     r += Parameter.rSigStrengthCorrection;
     Parameter.SigStrstat.addSample(r);

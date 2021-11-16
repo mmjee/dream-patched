@@ -199,6 +199,7 @@ CDRMReceiver::SetInputDevice(string s)
         if (pTuner)
         {
                 SetTuner(pTuner);
+                pTuner->LoadSettings(*pSettings);
         }
         break;
     }
@@ -1761,6 +1762,8 @@ CDRMReceiver::SaveSettings()
 
     s.Put("FrontEnd", "ifcentrefrequency", int(Parameters.FrontEndParameters.rIFCentreFreq));
 
+    if (pTuner)
+        pTuner->SaveSettings(s);
     /* Serial Number */
     s.Put("Receiver", "serialnumber", Parameters.sSerialNumber);
 

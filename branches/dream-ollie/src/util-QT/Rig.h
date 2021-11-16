@@ -41,8 +41,8 @@ class CRig :
 	Q_OBJECT
 public:
 	CRig(CParameter* np);
-	void LoadSettings(CSettings&);
-	void SaveSettings(CSettings&);
+        virtual void LoadSettings(CSettings&);
+        virtual void SaveSettings(CSettings&);
     virtual void SetFrequency(int);
 #ifdef HAVE_LIBHAMLIB
 	void GetRigList(map<rig_model_t,CHamlib::SDrRigCaps>& r) { Hamlib.GetRigList(r); }
