@@ -404,8 +404,7 @@ CDownstreamDI::AddSubscriber(const string& dest, const char profile, const strin
 	bool bOK = true;
 	if (dest != "")
 	{
-		bOK &= subs->SetDestination(dest);
-		if (bOK)
+        subs->SetDestination(dest);
 		{
 			bMDIOutEnabled = true;
 			subs->SetProfile(profile);
