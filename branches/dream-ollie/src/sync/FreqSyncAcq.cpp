@@ -51,6 +51,7 @@ void CFreqSyncAcq::ProcessDataInternal(CParameter& Parameters)
 	if (iFreeSymbolCounter >= Parameters.CellMappingTable.iNumSymPerFrame)
 	{
 		iFreeSymbolCounter = 0;
+        bUnlockedFrameBoundary = true;
 	}
 
 	if (bAquisition)
@@ -482,6 +483,8 @@ void CFreqSyncAcq::InitInternal(CParameter& Parameters)
 
 	/* OPH: init free-running symbol counter */
 	iFreeSymbolCounter = 0;
+    bUnlockedFrameBoundary = false;
+
 
 	Parameters.Unlock(); 
 }
@@ -507,4 +510,14 @@ void CFreqSyncAcq::StartAcquisition()
 
 	/* Reset FFT-history */
 	vecrFFTHistory.Reset((_REAL) 0.0);
+}
+
+bool CFreqSyncAcq::GetUnlockedFrameBoundary()
+{
+    if (bUnlockedFrameBoundary)
+    {
+        bUnlockedFrameBoundary = false;
+        return true;
+    }
+    return false;
 }

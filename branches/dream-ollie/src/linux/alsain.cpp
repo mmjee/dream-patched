@@ -125,7 +125,7 @@ bool CSoundIn::Init(int iSampleRate, int iNewBufferSize, bool bNewBlocking)
 }
 
 
-bool CSoundIn::Read(CVector< _SAMPLE >& psData)
+bool CSoundIn::Read(CVector<short>& psData, CParameter& Parameters)
 {
     CVectorEx<_SAMPLE>* p;
 

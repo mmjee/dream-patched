@@ -53,7 +53,7 @@ public:
     virtual std::string GetDev();
 
     bool Init(int iSampleRate, int iNewBufferSize, bool bNewBlocking = true);
-    bool Read(CVector<short>& psData);
+    bool Read(CVector<short>& psData, CParameter& Parameters);
     void Close();
     virtual std::string		GetVersion() { return "alsa audio input"; }
 

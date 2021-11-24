@@ -88,7 +88,7 @@ public:
 
 	void SetRecFilter(const bool bNewF) {bUseRecFilter = bNewF;}
 	bool GetRecFilter() {return bUseRecFilter;}
-	bool GetUnlockedFrameBoundary() {return iFreeSymbolCounter==0;}
+    bool GetUnlockedFrameBoundary();
 
 	/* To set the module up for synchronized DRM input data stream */
 	void SetSyncInput(bool bNewS) {bSyncInput = bNewS;}
@@ -138,6 +138,7 @@ protected:
 	/* OPH: counter to count symbols within a frame in order to generate */
 	/* RSCI output even when unlocked */
 	int							iFreeSymbolCounter;
+    bool                        bUnlockedFrameBoundary;
 
 	virtual void InitInternal(CParameter& Parameters);
 	virtual void ProcessDataInternal(CParameter& Parameters);
