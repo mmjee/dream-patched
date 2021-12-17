@@ -88,6 +88,16 @@ protected:
 	virtual std::string GetProfiles(); // Return a std::string containing the set of profiles for this tag
 };
 
+class CTagItemGeneratorFracModJulDate : public CTagItemGeneratorWithProfiles /* fmjd tag */
+{
+public:
+    CTagItemGeneratorFracModJulDate();
+    void GenTag();
+protected:
+    virtual std::string GetTagName();
+    virtual std::string GetProfiles(); // Return a std::string containing the set of profiles for this tag
+};
+
 class CTagItemGeneratorLoFrCnt : public CTagItemGeneratorWithProfiles /* dlfc tag */
 {
 public:

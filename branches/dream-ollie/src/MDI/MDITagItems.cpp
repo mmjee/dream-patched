@@ -41,6 +41,8 @@
 #include "MDITagItems.h"
 #include <iostream>
 #include <fstream>
+#include <chrono>
+#include <ctime>
 using namespace std;
 
 #include "../util/LogPrint.h"
@@ -167,6 +169,61 @@ string
 CTagItemGeneratorLoFrCnt::GetProfiles()
 {
 	return "ABCDQM";
+}
+
+
+CTagItemGeneratorFracModJulDate::CTagItemGeneratorFracModJulDate()
+{
+
+
+}
+
+string
+CTagItemGeneratorFracModJulDate::GetTagName()
+{
+    return "fmjd";
+}
+
+void CTagItemGeneratorFracModJulDate::GenTag()
+{
+
+    using namespace std::chrono;
+    const time_point<high_resolution_clock> now = high_resolution_clock::now();
+    auto ms = (duration_cast<milliseconds>(now.time_since_epoch()) % 1000);
+
+    auto timer = high_resolution_clock::to_time_t(now);
+    std::tm bt = *std::gmtime(&timer);
+
+    // MJD calculation from TS 102 349, but with ceiling operator ignored
+    // move leap day virtual to end of year
+    unsigned int modified_month = ((unsigned(bt.tm_mon) + 10) % 12) + 3; /* month is 0..11 */
+    unsigned int modified_year = (unsigned(bt.tm_year)+1900) - 1 + ((unsigned(bt.tm_mon) + 8) / 10);
+    /* intermediate variables */
+    unsigned int n1 = modified_year / 100;
+    unsigned int n2 = modified_year % 100;
+    unsigned int ModifiedJulianDate = 1721029 /* offset January, 1st 4713 BCE */
+    - 2400001u /* correction from JD to MJD*/
+    + 146097 * (n1 / 4) /* days of elapsed 400-year-cycles */
+    + 36524 * (n1 % 4) /* days of elapsed 100-year-cycles */
+    + 1461 * (n2 / 4) /* days of elapsed 4-year-cycles */
+    + 365 * (n2 % 4) /* days of elapsed years */
+    + 30 * modified_month /* days of elapsed months in actual year */
+    + ((7 * (modified_month - 2)) / 12) /* days of unequal month-length */
+    + unsigned(bt.tm_mday); /* elapsed days in actual month */
+    unsigned int fractionalDay =((((unsigned(bt.tm_hour)*60)
+                                   +unsigned (bt.tm_min))*60
+                                  +unsigned(bt.tm_sec))*10000
+                                 +unsigned(ms.count())*10);
+
+    PrepareTag(64);
+    Enqueue(ModifiedJulianDate, 32);
+    Enqueue(fractionalDay, 32);
+}
+
+string
+CTagItemGeneratorFracModJulDate::GetProfiles()
+{
+    return "ABCDGQM";
 }
 
 void

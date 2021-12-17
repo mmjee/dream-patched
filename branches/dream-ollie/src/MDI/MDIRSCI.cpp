@@ -111,6 +111,7 @@ void CDownstreamDI::SendLockedFrame(CParameter& Parameter,
 	TagItemGeneratorRINF.GenTag(Parameter.sReceiverID);	/* rinf */
 
 	/* RSCI tags ------------------------------------------------------------ */
+    TagItemGeneratorFracModJulDate.GenTag();
 	TagItemGeneratorRAFS.GenTag(Parameter);
 	TagItemGeneratorRWMF.GenTag(true, Parameter.rWMERFAC); /* WMER for FAC */
 	TagItemGeneratorRWMM.GenTag(true, Parameter.rWMERMSC); /* WMER for MSC */
@@ -171,6 +172,7 @@ void CDownstreamDI::SendUnlockedFrame(CParameter& Parameter)
 
 	/* Generate some other tags */
 	TagItemGeneratorRINF.GenTag(Parameter.sReceiverID);	/* rinf */
+    TagItemGeneratorFracModJulDate.GenTag(); /* fmjd */
 	TagItemGeneratorRxFrequency.GenTag(true, Parameter.GetFrequency()); /* rfre */
 	TagItemGeneratorRxActivated.GenTag(true); /* ract */
 	_REAL rSigStr = Parameter.SigStrstat.getCurrent();
@@ -248,6 +250,9 @@ void CDownstreamDI::GenDIPacket()
 
 	/* dlfc tag */
 	TagPacketGenerator.AddTagItem(&TagItemGeneratorLoFrCnt);
+
+    /* fmjd tag */
+    TagPacketGenerator.AddTagItem(&TagItemGeneratorFracModJulDate);
 
 	/* *ptr tag */
 	TagPacketGenerator.AddTagItem(&TagItemGeneratorProTyMDI);

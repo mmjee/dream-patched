@@ -158,6 +158,7 @@ protected:
 	CTagItemGeneratorProTyMDI TagItemGeneratorProTyMDI; /* *ptr tag */
 	CTagItemGeneratorProTyRSCI TagItemGeneratorProTyRSCI; /* *ptr tag */
 	CTagItemGeneratorLoFrCnt TagItemGeneratorLoFrCnt ; /* dlfc tag */
+    CTagItemGeneratorFracModJulDate TagItemGeneratorFracModJulDate; /* fmjd tag */
 	CTagItemGeneratorFAC TagItemGeneratorFAC; /* fac_ tag */
 	CTagItemGeneratorSDC TagItemGeneratorSDC; /* sdc_ tag */
 	CTagItemGeneratorSDC TagItemGeneratorSDCEmpty; /* empty sdc_ tag for use in non-SDC frames */
