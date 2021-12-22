@@ -39,11 +39,11 @@
 //#define FRAGSIZE 1024
 
 /* Classes ********************************************************************/
-class CSoundOut : public CSoundOutInterface
+class CSoundOutAlsa : public CSoundOutInterface
 {
 public:
-    CSoundOut();
-    virtual ~CSoundOut() {}
+    CSoundOutAlsa();
+    virtual ~CSoundOutAlsa() {}
 
     virtual void Enumerate(std::vector<std::string>&, std::vector<std::string>&, std::string&);
     virtual void SetDev(std::string sNewDevice);
@@ -66,7 +66,7 @@ protected:
         virtual ~CPlayThread() {}
         virtual void run();
         CSoundBuf SoundBuf;
-        CSoundOut*  pSoundOut;
+        CSoundOutAlsa*  pSoundOut;
     protected:
         _SAMPLE tmpplaybuf[NUM_OUT_CHANNELS * FRAGSIZE];
     } PlayThread;

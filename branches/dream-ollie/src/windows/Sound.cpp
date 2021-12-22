@@ -54,7 +54,7 @@ static UINT FindDevice(const vector<string>& vecstrDevices, const string& names)
 * Wave in                                                                      *
 \******************************************************************************/
 
-CSoundIn::CSoundIn():CSoundInInterface(),m_WaveIn(NULL)
+CSoundInMMSystem::CSoundInMMSystem():CSoundInInterface(),m_WaveIn(NULL)
 {
     int i;
 
@@ -91,7 +91,7 @@ CSoundIn::CSoundIn():CSoundInInterface(),m_WaveIn(NULL)
     bBlocking = true;
 }
 
-CSoundIn::~CSoundIn()
+CSoundInMMSystem::~CSoundInMMSystem()
 {
     /* Delete allocated memory */
     for (int i = 0; i < NUM_SOUND_BUFFERS_IN; i++)
@@ -105,7 +105,7 @@ CSoundIn::~CSoundIn()
         CloseHandle(m_WaveEvent);
 }
 
-bool CSoundIn::Read(CVector<short>& psData)
+bool CSoundInMMSystem::Read(CVector<short>& psData)
 {
     int			i;
     bool	bError;
@@ -156,7 +156,7 @@ bool CSoundIn::Read(CVector<short>& psData)
     return bError;
 }
 
-void CSoundIn::AddBuffer()
+void CSoundInMMSystem::AddBuffer()
 {
     /* Unprepare old wave-header */
     waveInUnprepareHeader(
@@ -174,7 +174,7 @@ void CSoundIn::AddBuffer()
         iWhichBuffer = 0;
 }
 
-void CSoundIn::PrepareBuffer(int iBufNum)
+void CSoundInMMSystem::PrepareBuffer(int iBufNum)
 {
     /* Set struct entries */
     m_WaveInHeader[iBufNum].lpData = (LPSTR) &psSoundcardBuffer[iBufNum][0];
@@ -185,7 +185,7 @@ void CSoundIn::PrepareBuffer(int iBufNum)
     waveInPrepareHeader(m_WaveIn, &m_WaveInHeader[iBufNum], sizeof(WAVEHDR));
 }
 
-bool CSoundIn::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking)
+bool CSoundInMMSystem::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking)
 {
     bool bChanged = false;
 
@@ -246,7 +246,7 @@ bool CSoundIn::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking)
     return bChanged;
 }
 
-void CSoundIn::OpenDevice()
+void CSoundInMMSystem::OpenDevice()
 {
     /* Init wave-format structure */
     sWaveFormatEx.wFormatTag = WAVE_FORMAT_PCM;
@@ -281,7 +281,7 @@ void CSoundIn::OpenDevice()
                       "usually occurs if another application blocks the sound in.");
 }
 
-void CSoundIn::SetDev(string sNewDev)
+void CSoundInMMSystem::SetDev(string sNewDev)
 {
     /* Change only in case new device id is not already active */
     if (sNewDev != sCurDev)
@@ -291,7 +291,7 @@ void CSoundIn::SetDev(string sNewDev)
     }
 }
 
-void CSoundIn::Enumerate(vector<string>& names, vector<string>& descriptions, string& defaultInput)
+void CSoundInMMSystem::Enumerate(vector<string>& names, vector<string>& descriptions, string& defaultInput)
 {
     names = vecstrDevices;
     descriptions.resize(names.size(), "");
@@ -307,12 +307,12 @@ void CSoundIn::Enumerate(vector<string>& names, vector<string>& descriptions, st
     }
 }
 
-string	CSoundIn::GetDev()
+string	CSoundInMMSystem::GetDev()
 {
     return sCurDev;
 }
 
-void CSoundIn::Close()
+void CSoundInMMSystem::Close()
 {
     int			i;
     MMRESULT	result;
@@ -356,7 +356,7 @@ void CSoundIn::Close()
 /******************************************************************************\
 * Wave out                                                                     *
 \******************************************************************************/
-CSoundOut::CSoundOut():CSoundOutInterface(),m_WaveOut(NULL)
+CSoundOutMMSystem::CSoundOutMMSystem():CSoundOutInterface(),m_WaveOut(NULL)
 {
     int i;
 
@@ -396,7 +396,7 @@ CSoundOut::CSoundOut():CSoundOutInterface(),m_WaveOut(NULL)
     bBlocking = false;
 }
 
-CSoundOut::~CSoundOut()
+CSoundOutMMSystem::~CSoundOutMMSystem()
 {
     /* Delete allocated memory */
     for (int i = 0; i < NUM_SOUND_BUFFERS_OUT; i++)
@@ -410,7 +410,7 @@ CSoundOut::~CSoundOut()
         CloseHandle(m_WaveEvent);
 }
 
-bool CSoundOut::Write(CVector<short>& psData)
+bool CSoundOutMMSystem::Write(CVector<short>& psData)
 {
     int			i, j;
     int			iCntPrepBuf;
@@ -489,7 +489,7 @@ cerr << "sound out buffers empty" << endl;
     return bError;
 }
 
-void CSoundOut::GetDoneBuffer(int& iCntPrepBuf, int& iIndexDoneBuf)
+void CSoundOutMMSystem::GetDoneBuffer(int& iCntPrepBuf, int& iIndexDoneBuf)
 {
     /* Get number of "done"-buffers and position of one of them */
     iCntPrepBuf = 0;
@@ -503,7 +503,7 @@ void CSoundOut::GetDoneBuffer(int& iCntPrepBuf, int& iIndexDoneBuf)
     }
 }
 
-void CSoundOut::AddBuffer(int iBufNum)
+void CSoundOutMMSystem::AddBuffer(int iBufNum)
 {
     /* Unprepare old wave-header */
     waveOutUnprepareHeader(
@@ -516,7 +516,7 @@ void CSoundOut::AddBuffer(int iBufNum)
     waveOutWrite(m_WaveOut, &m_WaveOutHeader[iBufNum], sizeof(WAVEHDR));
 }
 
-void CSoundOut::PrepareBuffer(int iBufNum)
+void CSoundOutMMSystem::PrepareBuffer(int iBufNum)
 {
     /* Set Header data */
     m_WaveOutHeader[iBufNum].lpData = (LPSTR) &psPlaybackBuffer[iBufNum][0];
@@ -527,7 +527,7 @@ void CSoundOut::PrepareBuffer(int iBufNum)
     waveOutPrepareHeader(m_WaveOut, &m_WaveOutHeader[iBufNum], sizeof(WAVEHDR));
 }
 
-bool CSoundOut::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking)
+bool CSoundOutMMSystem::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking)
 {
     bool bChanged = false;
 
@@ -577,7 +577,7 @@ bool CSoundOut::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking)
     return bChanged;
 }
 
-void CSoundOut::OpenDevice()
+void CSoundOutMMSystem::OpenDevice()
 {
     /* Init wave-format structure */
     sWaveFormatEx.wFormatTag = WAVE_FORMAT_PCM;
@@ -610,7 +610,7 @@ void CSoundOut::OpenDevice()
         throw CGenErr("Sound Interface Start, waveOutOpen() failed.");
 }
 
-void CSoundOut::Enumerate(vector<string>& names, vector<string>& descriptions, string& defaultOutput)
+void CSoundOutMMSystem::Enumerate(vector<string>& names, vector<string>& descriptions, string& defaultOutput)
 {
     names = vecstrDevices;
     descriptions.resize(names.size(), "");
@@ -626,12 +626,12 @@ void CSoundOut::Enumerate(vector<string>& names, vector<string>& descriptions, s
     }
 }
 
-string CSoundOut::GetDev()
+string CSoundOutMMSystem::GetDev()
 {
     return sCurDev;
 }
 
-void CSoundOut::SetDev(string sNewDev)
+void CSoundOutMMSystem::SetDev(string sNewDev)
 {
     /* Change only in case new device id is not already active */
     if (sNewDev != sCurDev)
@@ -642,7 +642,7 @@ void CSoundOut::SetDev(string sNewDev)
 }
 
 
-void CSoundOut::Close()
+void CSoundOutMMSystem::Close()
 {
     int			i;
     MMRESULT	result;

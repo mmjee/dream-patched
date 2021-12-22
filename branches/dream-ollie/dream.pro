@@ -539,7 +539,6 @@ HEADERS += \
     src/ServiceInformation.h \
     src/sound/audiofilein.h \
     src/sound/selectioninterface.h \
-    src/sound/sound.h \
     src/sound/soundinterface.h \
     src/sound/soundnull.h \
     src/sourcedecoders/aac_codec.h \
@@ -587,7 +586,8 @@ HEADERS += \
     src/sourcedecoders/reverb.h \
     src/sourcedecoders/caudioreverb.h \
     src/sound/drm_soapySDR.h \
-    src/tuner.h
+    src/tuner.h \
+    src/sound/soundinterfacefactory.h
 SOURCES += \
     src/AMDemodulation.cpp \
     src/AMSSDemodulation.cpp \
@@ -705,7 +705,8 @@ SOURCES += \
     src/sourcedecoders/reverb.cpp \
     src/sourcedecoders/caudioreverb.cpp \
     src/sound/drm_soapySDR.cpp \
-    src/tuner.cpp
+    src/tuner.cpp \
+    src/sound/soundinterfacefactory.cpp
 
 contains(QT,core) {
     HEADERS += \

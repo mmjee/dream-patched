@@ -51,11 +51,11 @@
 #define BYTES_PER_SAMPLE  2  /* Number of bytes per sample */
 
 /* Classes ********************************************************************/
-class CSoundIn : public CSoundInInterface
+class CSoundInMMSystem : public CSoundInInterface
 {
     public:
-    CSoundIn();
-virtual ~CSoundIn();
+    CSoundInMMSystem();
+virtual ~CSoundInMMSystem();
 
 virtual bool Init(int iSampleRate, int iNewBufferSize, bool bNewBlocking);
 virtual bool Read(CVector<short>& psData);
@@ -88,11 +88,11 @@ short*   psSoundcardBuffer[NUM_SOUND_BUFFERS_IN];
 
 };
 
-class CSoundOut : public CSoundOutInterface
+class CSoundOutMMSystem : public CSoundOutInterface
 {
     public:
-    CSoundOut();
-virtual ~CSoundOut();
+    CSoundOutMMSystem();
+virtual ~CSoundOutMMSystem();
 
 virtual bool Init(int iSampleRate, int iNewBufferSize, bool bNewBlocking);
 virtual bool Write(CVector<short>& psData);

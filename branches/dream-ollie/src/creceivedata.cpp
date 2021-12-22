@@ -34,7 +34,7 @@
 # include <QTimer>
 # include <QEventLoop>
 #else
-# include "sound/sound.h"
+# include "sound/soundinterfacefactory.h"
 #endif
 #include "sound/audiofilein.h"
 #include "util/FileTyper.h"
@@ -106,7 +106,7 @@ void CReceiveData::Enumerate(vector<string>& names, vector<string>& descriptions
         }
     }
 #else
-    if(pSound==nullptr) pSound = new CSoundIn;
+    if(pSound==nullptr) pSound = CSoundInterfaceFactory::CreateSoundInInterface();
     pSound->Enumerate(names, descriptions, defaultInput);
 #endif
 }
@@ -164,7 +164,7 @@ CReceiveData::SetSoundInterface(string device)
             qDebug("can't find audio input %s", device.c_str());
         }
 #else
-        pSound = new CSoundIn();
+        pSound = CSoundInterfaceFactory::CreateSoundInInterface();
         pSound->SetDev(device);
 #endif
     }

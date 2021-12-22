@@ -42,11 +42,11 @@
 //#define FRAGSIZE 1024
 
 /* Classes ********************************************************************/
-class CSoundIn : public CSoundInInterface
+class CSoundInAlsa : public CSoundInInterface
 {
 public:
-    CSoundIn();
-    virtual ~CSoundIn() {}
+    CSoundInAlsa();
+    virtual ~CSoundInAlsa() {}
 
     virtual void Enumerate(std::vector<std::string>&, std::vector<std::string>&, std::string&);
     virtual void SetDev(std::string sNewDevice);
@@ -68,7 +68,7 @@ protected:
         virtual ~CRecThread() {}
         virtual void run();
         CSoundBuf SoundBuf;
-        CSoundIn*   pSoundIn;
+        CSoundInAlsa*   pSoundIn;
     protected:
         _SAMPLE tmprecbuf[NUM_IN_CHANNELS * FRAGSIZE];
     } RecThread;

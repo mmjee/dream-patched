@@ -1,3 +1,5 @@
+#include "soundinterfacefactory.h"
+
 /******************************************************************************\
  * British Broadcasting Corporation
  * Copyright (c) 2007
@@ -26,9 +28,6 @@
  *
 \******************************************************************************/
 
-#ifndef _SOUND_H
-#define _SOUND_H
-
 #if defined(WIN32) && !defined(USE_PORTAUDIO) && !defined(USE_JACK) && !defined(QT_MULTIMEDIA_LIB)
 /* mmsystem sound interface */
 # include "../windows/Sound.h"
@@ -41,37 +40,91 @@
 
 # ifdef USE_JACK
 #  include "../linux/jack.h"
-typedef CSoundInJack CSoundIn;
-typedef CSoundOutJack CSoundOut;
 # endif
 
 # ifdef USE_PULSEAUDIO
 #  include "drm_pulseaudio.h"
-//typedef CSoundInPulse CSoundIn;
-#include "drm_soapySDR.h"
-typedef CSoapySDRIn CSoundIn;
-typedef CSoundOutPulse CSoundOut;
 # endif
+
+#ifdef USE_SOAPYSDR
+#include "drm_soapySDR.h"
+#endif
+
 
 # ifdef USE_PORTAUDIO
 #  include "drm_portaudio.h"
-typedef CPaIn CSoundIn;
-typedef CPaOut CSoundOut;
+
 # endif
 
 # ifdef USE_OPENSL
 #  include "../android/soundin.h"
 #  include "../android/soundout.h"
-typedef COpenSLESIn CSoundIn;
-typedef COpenSLESOut CSoundOut;
+
 # endif
 
 # if defined(QT_MULTIMEDIA_LIB) || (!defined(USE_OSS) && !defined(USE_ALSA) && !defined(USE_JACK) && !defined(USE_PULSEAUDIO) && !defined(USE_PORTAUDIO) && !defined(USE_OPENSL))
 #  include "soundnull.h"
-typedef CSoundInNull CSoundIn;
-typedef CSoundOutNull CSoundOut;
+
 # endif
 
 #endif
 
-#endif
+
+
+
+
+
+CSoundInterfaceFactory::CSoundInterfaceFactory()
+{
+
+}
+
+CSoundInInterface * CSoundInterfaceFactory::CreateSoundInInterface()
+{
+
+#if defined(USE_SOAPYSDR)
+    return new CSoapySDRIn();
+#elif defined(WIN32) && !defined(USE_PORTAUDIO) && !defined(USE_JACK) && !defined(QT_MULTIMEDIA_LIB)
+/* mmsystem sound interface */
+    return new CSoundInMMSystem();
+#elif defined(USE_ALSA)
+    return new CSoundInAlsa();
+#elif defined (USE_JACK)
+    return new CSoundInJack();
+#elif defined (USE_PULSEAUDIO)
+    return new CSoundInPulse();
+#elif defined (USE_PORTAUDIO)
+    return new CPaIn();
+#elif defined(USE_OPENSL)
+    return new COpenSLESIn();
+// defined(QT_MULTIMEDIA_LIB) || (!defined(USE_OSS) && !defined(USE_ALSA) && !defined(USE_JACK) && !defined(USE_PULSEAUDIO) && !defined(USE_PORTAUDIO) && !defined(USE_OPENSL))
+#else
+    return new CSoundInNull();
+# endif
+
+
+}
+
+
+CSoundOutInterface * CSoundInterfaceFactory::CreateSoundOutInterface()
+{
+#if defined(WIN32) && !defined(USE_PORTAUDIO) && !defined(USE_JACK) && !defined(QT_MULTIMEDIA_LIB)
+/* mmsystem sound interface */
+    return new CSoundOutMMSystem();
+#elif defined(USE_ALSA)
+    return new CSoundOutAlsa();
+# elif defined(USE_JACK)
+    return new CSoundOutJack();
+#elif defined(USE_PULSEAUDIO)
+    return new CSoundOutPulse();
+#elif defined(USE_PORTAUDIO)
+    return new CPaOut();
+#elif defined(USE_OPENSL)
+    return new COpenSLESOut();
+#else
+// if defined(QT_MULTIMEDIA_LIB) || (!defined(USE_OSS) && !defined(USE_ALSA) && !defined(USE_JACK) && !defined(USE_PULSEAUDIO) && !defined(USE_PORTAUDIO) && !defined(USE_OPENSL))
+    return new CSoundOutNull();
+# endif
+
+
+}

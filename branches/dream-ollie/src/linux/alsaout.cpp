@@ -43,19 +43,19 @@ using namespace std;
 
 #include <alsa/asoundlib.h>
 
-CSoundOut::CSoundOut():
+CSoundOutAlsa::CSoundOutAlsa():
     iBufferSize(0), iInBufferSize(0), tmpplaybuf(nullptr), bBlockingPlay(false),
     bChangDev(true), sCurrentDevice(""), iSampleRate(48000),handle(nullptr)
 {
     PlayThread.pSoundOut = this;
 }
 
-void CSoundOut::Enumerate(vector<string>& choices, vector<string>& descriptions, string& defaultOutput)
+void CSoundOutAlsa::Enumerate(vector<string>& choices, vector<string>& descriptions, string& defaultOutput)
 {
     enumerate(choices, descriptions, defaultOutput, SND_PCM_STREAM_PLAYBACK);
 }
 
-void CSoundOut::CPlayThread::run()
+void CSoundOutAlsa::CPlayThread::run()
 {
     while ( SoundBuf.keep_running ) {
         int fill;
@@ -95,7 +95,7 @@ void CSoundOut::CPlayThread::run()
     qDebug("Play Thread stopped");
 }
 
-bool CSoundOut::Init(int iSampleRate, int iNewBufferSize, bool bNewBlocking)
+bool CSoundOutAlsa::Init(int iSampleRate, int iNewBufferSize, bool bNewBlocking)
 {
     qDebug("initplay %d", iNewBufferSize);
 
@@ -128,7 +128,7 @@ bool CSoundOut::Init(int iSampleRate, int iNewBufferSize, bool bNewBlocking)
 }
 
 
-bool CSoundOut::Write(CVector< _SAMPLE >& psData)
+bool CSoundOutAlsa::Write(CVector< _SAMPLE >& psData)
 {
     /* Check if device must be opened or reinitialized */
     if (bChangDev)
@@ -171,7 +171,7 @@ bool CSoundOut::Write(CVector< _SAMPLE >& psData)
     return false;
 }
 
-void CSoundOut::Close()
+void CSoundOutAlsa::Close()
 {
     qDebug("stopplay");
 
@@ -187,7 +187,7 @@ void CSoundOut::Close()
     bChangDev = true;
 }
 
-void CSoundOut::SetDev(string sNewDevice)
+void CSoundOutAlsa::SetDev(string sNewDevice)
 {
     /* Change only in case new device id is not already active */
     if (sNewDevice != sCurrentDevice)
@@ -197,12 +197,12 @@ void CSoundOut::SetDev(string sNewDevice)
     }
 }
 
-string CSoundOut::GetDev()
+string CSoundOutAlsa::GetDev()
 {
     return sCurrentDevice;
 }
 
-void CSoundOut::Init_HW()
+void CSoundOutAlsa::Init_HW()
 {
     vector<string> names;
     vector<string> descriptions;
@@ -213,12 +213,12 @@ void CSoundOut::Init_HW()
     handle = Init_hw(FRAGSIZE * NUM_OUT_CHANNELS/2, iSampleRate, sCurrentDevice, SND_PCM_STREAM_PLAYBACK);
 }
 
-int CSoundOut::write_HW(_SAMPLE *playbuf, int size )
+int CSoundOutAlsa::write_HW(_SAMPLE *playbuf, int size )
 {
     return write_hw(handle, playbuf, size);
 }
 
-void CSoundOut::close_HW()
+void CSoundOutAlsa::close_HW()
 {
     close_hw(handle);
     handle = nullptr;
