@@ -52,7 +52,8 @@ bool CSoapySDRIn::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking
         return false; // NB return value is "changed" not "success"
     }
 
-    iSampleRate = 96000; //iNewSampleRate;
+    iSampleRate = iNewSampleRate;
+    fprintf(stdout, "Setting sample rate to %d\n", iSampleRate);
     pDevice->setSampleRate(SOAPY_SDR_RX, 0, iSampleRate);
 
     pDevice->setFrequency(SOAPY_SDR_RX, 0, iFrequency);

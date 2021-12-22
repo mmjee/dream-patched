@@ -1440,10 +1440,13 @@ CDRMReceiver::LoadSettings()
     Parameters.SetNewAudSampleRate(s.Get("Receiver", "samplerateaud", int(DEFAULT_SOUNDCRD_SAMPLE_RATE)));
 
     /* Sound card signal sample rate, some settings below depends on this one */
-    Parameters.SetNewSigSampleRate(s.Get("Receiver", "sampleratesig", int(DEFAULT_SOUNDCRD_SAMPLE_RATE)));
+    Parameters.SetNewSoundcardSigSampleRate(s.Get("Receiver", "sampleratesig", int(DEFAULT_SOUNDCRD_SAMPLE_RATE)));
 
     /* Signal upscale ratio */
     Parameters.SetNewSigUpscaleRatio(s.Get("Receiver", "sigupratio", int(1)));
+
+    /* Signal upscale ratio */
+    Parameters.SetNewSigDownscaleRatio(s.Get("Receiver", "sigdownratio", int(1)));
 
     /* Fetch new sample rate if any */
     Parameters.FetchNewSampleRate();
@@ -1670,6 +1673,9 @@ CDRMReceiver::SaveSettings()
 
     /* Signal upscale ratio */
     s.Put("Receiver", "sigupratio", Parameters.GetSigUpscaleRatio());
+
+    /* Signal downscale ratio */
+    s.Put("Receiver", "sigdownratio", Parameters.GetSigDownscaleRatio());
 
     /* if 0 then only measure PSD when RSCI in use otherwise always measure it */
     s.Put("Receiver", "measurepsdalways", Parameters.bMeasurePSDAlways);

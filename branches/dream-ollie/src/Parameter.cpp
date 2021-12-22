@@ -124,8 +124,9 @@ CParameter::CParameter():
     iAudSampleRate(DEFAULT_SOUNDCRD_SAMPLE_RATE),
     iSigSampleRate(DEFAULT_SOUNDCRD_SAMPLE_RATE),
     iSigUpscaleRatio(1),
+    iSigDownscaleRatio(1),
     iNewAudSampleRate(0),
-    iNewSigSampleRate(0),
+    iNewSoundcardSigSampleRate(0),
     iNewSigUpscaleRatio(0),
     rSysSimSNRdB(0.0),
     iFrequency(0),
@@ -237,8 +238,9 @@ CParameter::CParameter(const CParameter& p):
     iAudSampleRate(p.iAudSampleRate),
     iSigSampleRate(p.iSigSampleRate),
     iSigUpscaleRatio(p.iSigUpscaleRatio),
+    iSigDownscaleRatio(p.iSigDownscaleRatio),
     iNewAudSampleRate(p.iNewAudSampleRate),
-    iNewSigSampleRate(p.iNewSigSampleRate),
+    iNewSoundcardSigSampleRate(p.iNewSoundcardSigSampleRate),
     iNewSigUpscaleRatio(p.iNewSigUpscaleRatio),
     rSysSimSNRdB(p.rSysSimSNRdB),
     iFrequency(p.iFrequency),
@@ -347,8 +349,9 @@ CParameter& CParameter::operator=(const CParameter& p)
     iAudSampleRate = p.iAudSampleRate;
     iSigSampleRate = p.iSigSampleRate;
     iSigUpscaleRatio = p.iSigUpscaleRatio;
+    iSigDownscaleRatio = p.iSigDownscaleRatio;
     iNewAudSampleRate = p.iNewAudSampleRate;
-    iNewSigSampleRate = p.iNewSigSampleRate;
+    iNewSoundcardSigSampleRate = p.iNewSoundcardSigSampleRate;
     iNewSigUpscaleRatio = p.iNewSigUpscaleRatio;
     rSysSimSNRdB = p.rSysSimSNRdB;
     iFrequency = p.iFrequency;

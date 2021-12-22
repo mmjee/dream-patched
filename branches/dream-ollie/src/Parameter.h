@@ -922,13 +922,17 @@ public:
     {
         return iSigUpscaleRatio;
     }
+    int GetSigDownscaleRatio() const
+    {
+        return iSigDownscaleRatio;
+    }
     int GetSoundCardSigSampleRate() const
     {
-        return iSigSampleRate / iSigUpscaleRatio;
+        return iSigSampleRate * iSigDownscaleRatio / iSigUpscaleRatio;
     }
     void SetSoundCardSigSampleRate(int sr)
     {
-        iSigSampleRate = sr * iSigUpscaleRatio;
+        iSigSampleRate = sr * iSigUpscaleRatio / iSigDownscaleRatio;
     }
     void SetNewAudSampleRate(int sr)
     {
@@ -942,18 +946,22 @@ public:
         sr = (sr + 12) / 25 * 25; // <- ok for DRM mode
         iNewAudSampleRate = sr;
     }
-    void SetNewSigSampleRate(int sr)
+    void SetNewSoundcardSigSampleRate(int sr)
     {
         /* Set to the nearest supported sample rate */
         if      (sr < 36000)  sr = 24000;
         else if (sr < 72000)  sr = 48000;
         else if (sr < 144000) sr = 96000;
         else                  sr = 192000;
-        iNewSigSampleRate = sr;
+        iNewSoundcardSigSampleRate = sr;
     }
     void SetNewSigUpscaleRatio(int ratio)
     {
         iNewSigUpscaleRatio = ratio < 2 ? 1 : 2;
+    }
+    void SetNewSigDownscaleRatio(int ratio)
+    {
+        iNewSigDownscaleRatio = ratio < 2 ? 1 : 2;
     }
     /* New sample rate are fetched at init and restart */
     void FetchNewSampleRate()
@@ -963,15 +971,20 @@ public:
             iSigUpscaleRatio = iNewSigUpscaleRatio;
             iNewSigUpscaleRatio = 0;
         }
+        if (iNewSigDownscaleRatio != 0)
+        {
+            iSigDownscaleRatio = iNewSigDownscaleRatio;
+            iNewSigDownscaleRatio = 0;
+        }
         if (iNewAudSampleRate != 0)
         {
             iAudSampleRate = iNewAudSampleRate;
             iNewAudSampleRate = 0;
         }
-        if (iNewSigSampleRate != 0)
+        if (iNewSoundcardSigSampleRate != 0)
         {
-            iSigSampleRate = iNewSigSampleRate * iSigUpscaleRatio;
-            iNewSigSampleRate = 0;
+            iSigSampleRate = iNewSoundcardSigSampleRate * iSigUpscaleRatio / iSigDownscaleRatio;
+            iNewSoundcardSigSampleRate = 0;
         }
     }
 
@@ -1199,9 +1212,11 @@ protected:
     int iAudSampleRate;
     int iSigSampleRate;
     int iSigUpscaleRatio;
+    int iSigDownscaleRatio;
     int iNewAudSampleRate;
-    int iNewSigSampleRate;
+    int iNewSoundcardSigSampleRate;
     int iNewSigUpscaleRatio;
+    int iNewSigDownscaleRatio;
 
     _REAL rSysSimSNRdB;
 
