@@ -27,6 +27,7 @@ public:
     virtual void SetFrequency(int);
     virtual void LoadSettings(CSettings&);
     virtual void SaveSettings(CSettings&);
+    virtual CTuner * GetTuner();
 
 protected:
 

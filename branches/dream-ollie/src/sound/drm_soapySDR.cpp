@@ -21,6 +21,7 @@ int CSoapySDRIn::iLastTunedFrequency = 0;
 // Constructor(s)
 CSoapySDRIn::CSoapySDRIn() : currentDev(""), iSampleRate(96000), iBufferSize(0), iFrequency(iLastTunedFrequency), pDevice(nullptr), pStream(nullptr)
 {
+    cout<<"CSoapySDRIn::ctor"<<endl;
 }
 
 CSoapySDRIn::~CSoapySDRIn()
@@ -28,9 +29,15 @@ CSoapySDRIn::~CSoapySDRIn()
     CloseDevice();
 }
 
+CTuner *CSoapySDRIn::GetTuner()
+{
+    return this;
+}
+
 // CSoundInInterface methods
 bool CSoapySDRIn::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking)
 {
+    cout<<"CSoapySDRIn::Init()"<<endl;
     // Close device if currently open
     CloseDevice();
 
@@ -61,6 +68,7 @@ bool CSoapySDRIn::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking
     fprintf(stdout, "Setting sample rate to %d\n", iSampleRate);
     pDevice->setSampleRate(SOAPY_SDR_RX, 0, iSampleRate);
 
+    fprintf(stdout, "Setting frequency to %d\n", iFrequency);
     pDevice->setFrequency(SOAPY_SDR_RX, 0, iFrequency);
 
     iBufferSize = iNewBufferSize;
