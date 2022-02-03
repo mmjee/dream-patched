@@ -31,10 +31,13 @@ public:
 protected:
 
     void ApplyConfigString();
+    void CloseDevice();
     std::string currentDev;
     int				iSampleRate;
     int				iBufferSize;
     int             iFrequency;
+
+    static int      iLastTunedFrequency;
 
     SoapySDR::Device *pDevice;
     SoapySDR::Stream *pStream;
