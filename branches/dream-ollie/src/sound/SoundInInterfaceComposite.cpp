@@ -9,6 +9,7 @@ CSoundInInterfaceComposite::~CSoundInInterfaceComposite()
 {
     for (CSoundInInterface *pInterface: vecSoundInInterfaces)
         delete pInterface;
+    vecSoundInInterfaces.clear();
 
 }
 
