@@ -1,4 +1,4 @@
 #!/bin/bash
 cd /home/debian/drm-code/theseus/server/tcl
-nohup ./startall > /dev/null
+/usr/bin/tclsh RecordRSCIFilePerFrame.tcl $1 $2 $3
 

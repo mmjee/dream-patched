@@ -251,7 +251,7 @@ proc InformationCollector {inDataId} {
 
 
     # Only decode if there is no problem
-    if {[lindex $tags(rsta) 2] == 0 && [info exists receptionInfo(sdc_)]} {
+    if {[lindex $tags(rsta) 2] == 0 && [info exists receptionInfo(sdc_)] && [info exists tags(sdc_)]} {
 
 	set tagName "sdc_"
 	if {[string length $tags($tagName)] > 0} {    

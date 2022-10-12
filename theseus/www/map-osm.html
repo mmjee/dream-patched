@@ -4,6 +4,9 @@
   <head>
     <link rel="shortcut icon" href="images/favicon.ico" type="image/vnd.microsoft.icon">
     <link rel=StyleSheet href="style.css" type="text/css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+      integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+      crossorigin=""/>
     <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
     <title>THESEUS Remote Monitoring System</title>
     <script type="text/javascript" src="/mochikit/MochiKit.js"></script>
@@ -26,13 +29,20 @@
       }
     </style>
 
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+      integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+      crossorigin="">
+    </script>
+
+    <script src="Leaflet.MakiMarkers.js"></script>
+
     <script type="text/javascript">
-    var gMapKey = new Object();
-    gMapKey["theseus.dyndns.ws"] = "ABQIAAAAC8cA3g86C3NrkisfLHAJBRQSDP7JqhIWfE6k1-oAPnxvuS-LkRT3bnoxfroMsAZG8sDuaKIYX4ZIUA";
-    gMapKey["theseus.bbctest01.uk"] = "ABQIAAAAC8cA3g86C3NrkisfLHAJBRQSDP7JqhIWfE6k1-oAPnxvuS-LkRT3bnoxfroMsAZG8sDuaKIYX4ZIUA";
-    document.write('<script src="https://maps.google.com/maps?file=api&amp;v=2&amp;key=' +
-      gMapKey[document.location.host] + 
-      '" type="text\/javascript"><\/script>');
+    //var gMapKey = new Object();
+    //gMapKey["theseus.dyndns.ws"] = "ABQIAAAAC8cA3g86C3NrkisfLHAJBRQSDP7JqhIWfE6k1-oAPnxvuS-LkRT3bnoxfroMsAZG8sDuaKIYX4ZIUA";
+    //gMapKey["theseus.bbctest01.uk"] = "ABQIAAAAC8cA3g86C3NrkisfLHAJBRQSDP7JqhIWfE6k1-oAPnxvuS-LkRT3bnoxfroMsAZG8sDuaKIYX4ZIUA";
+    //document.write('<script src="https://maps.google.com/maps?file=api&amp;v=2&amp;key=' +
+    //  gMapKey[document.location.host] + 
+    //  '" type="text\/javascript"><\/script>');
     </script>
 
     <script type="text/javascript">
@@ -45,10 +55,11 @@
 
     var updateAuto = true;
     var updateTimems = 3000;
-    var map;
+    var mymap;
     var receivers = new Object();    // global associative array for the markers
     var polylineArray = new Array(); // global array of tx to rx lines
 
+    var mapboxAccessToken = 'pk.eyJ1Ijoib2xsaWVoYWZmZW5kZW4iLCJhIjoiY2ttZzhramVsM2NrajJxa25zZHUxeWV4cCJ9.Jo0rCixlc8ClesLmbSFuzA';
     var displayGroup = new DisplayGroup("displayGroup", "images", receivers);
     
     var oldGroupHtml = "";
@@ -59,13 +70,13 @@
     displayGroup.setUpdateDisplayFunction(function() {
       for (receiver in receivers) {
         if (receivers[receiver].display)
-          receivers[receiver].marker.show();
+          receivers[receiver].marker.setOpacity(100);
         else
-          receivers[receiver].marker.hide();
+          receivers[receiver].marker.setOpacity(0);
       }
     });
 
-    //check for canvas support (only FireFox > 1.5)
+    //check for canvas support (only FireFox  1.5 or above)
     var hasCanvas = CanvasRenderer.isSupported();
 
     //this function needed so that we don't 'unroll' GMarker
@@ -163,7 +174,7 @@
               "&nbsp;&nbsp;" + name + "&nbsp;&nbsp;(" + data.lastUpdate + "s ago)";
 
       html += "<p class=\"bubble\" style=\"color: " + determineTextColour(data) + "\">";
-
+ 
       if (data.rdmo == "drm_")
       {
         html +=  "<b> " + data.stationLabel + "</b>, " + data.frequency + "kHz, " + data.mode + "<br>" +
@@ -185,17 +196,19 @@
 
       html += "<hr>";
 
+      //receivers[name].marker.bindPopup(html);
+
       document.getElementById("bubble_data").innerHTML = html;
-      document.getElementById("bubble_data2").innerHTML = html;
-      document.getElementById("bubble_data3").innerHTML = html;
+      //document.getElementById("bubble_data2").innerHTML = html;
+      //document.getElementById("bubble_data3").innerHTML = html;
 
-      statsHtml = "Audio stats: ";
-      if (data.audioStatsPresent)
-        statsHtml += data.audioStats.percentCorrect + "% (of "+data.audioStats.totalAudioFrames+" audio frames)";
-      statsHtml += "<br>";
-      statsHtml += GenerateStatsHtml(data, new Array("wmf","wmm","mer","dbv"));
+      //statsHtml = "Audio stats: ";
+      //if (data.audioStatsPresent)
+        //statsHtml += data.audioStats.percentCorrect + "% (of "+data.audioStats.totalAudioFrames+" audio frames)";
+      //statsHtml += "<br>";
+      //statsHtml += GenerateStatsHtml(data, new Array("wmf","wmm","mer","dbv"));
 
-      document.getElementById("stats_data").innerHTML = statsHtml;
+      //document.getElementById("stats_data").innerHTML = statsHtml;
 
       if (hasCanvas) {
           if (receiver.data.psdPresent) {
@@ -210,17 +223,17 @@
           } else
             receiver.impGraph.clear();
 
-          if (receiver.data.rdbvHistoryPresent) {
-            var graph = receiver.data.rdbvHistoryGraphData;
-            receiver.rdbvHistoryGraph.draw(graph.points, graph.start, graph.end, 10, "s", -20, 100, 40, "dBuV");
-          } else
-            receiver.rdbvHistoryGraph.clear();
+          //if (receiver.data.rdbvHistoryPresent) {
+            //var graph = receiver.data.rdbvHistoryGraphData;
+            //receiver.rdbvHistoryGraph.draw(graph.points, graph.start, graph.end, 10, "s", -20, 100, 40, "dBuV");
+          //} else
+            //receiver.rdbvHistoryGraph.clear();
 
-          if (receiver.data.rwmmHistoryPresent) {
-            var graph = receiver.data.rwmmHistoryGraphData;
-            receiver.rwmmHistoryGraph.draw(graph.points, graph.start, graph.end, 10, "s", 0, 40, 10, "dB");
-          } else
-            receiver.rwmmHistoryGraph.clear();
+          //if (receiver.data.rwmmHistoryPresent) {
+            //var graph = receiver.data.rwmmHistoryGraphData;
+            //receiver.rwmmHistoryGraph.draw(graph.points, graph.start, graph.end, 10, "s", 0, 40, 10, "dB");
+          //} else
+            //receiver.rwmmHistoryGraph.clear();
         }
     }
 
@@ -280,7 +293,7 @@
     }
 
     function flyToMarker(name) {
-      map.panTo(receivers[name].marker.getPoint());
+      mymap.panTo(receivers[name].marker.getLatLng());
     }
 
     function joinDots(names) {
@@ -345,8 +358,9 @@
      return html;
    }
 
-    function determineMarkerImage(data) {
+    function determineMarkerIcon(data) {
       // use markers to indicate last update time
+      var icon;
       var markerSaturation = "";
 
       if (data.lastUpdate <= 3)
@@ -366,57 +380,88 @@
         var markerName = "";
         if (audioStatusFloat == 100) {
           if (wmmFloat > 21) {
-            markerName = "https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=D|00" + markerSaturation + "00|000000";
+//            markerName = "https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=D|00" + markerSaturation + "00|000000";
 //            markerName = "images/marker_good" + markerSuffix + ".png";
+		  icon = L.MakiMarkers.icon({icon: "music", color: "#" + "00" + markerSaturation + "00"});
           } else {
-            markerName = "https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=D|" + markerSaturation + markerSaturation + "00|000000";
+//            markerName = "https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=D|" + markerSaturation + markerSaturation + "00|000000";
 //            markerName = "images/marker_marginal" + markerSuffix + ".png";
+		  icon = L.MakiMarkers.icon({icon: "music", color: "#" + markerSaturation + markerSaturation + "00"});
           }
         } else {
-            markerName = "https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=D|" + markerSaturation + "0000|000000";
+//            markerName = "https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=D|" + markerSaturation + "0000|000000";
 //           markerName = "images/marker_bad" + markerSuffix + ".png";
+		icon = L.MakiMarkers.icon({icon: "music", color: "#" + markerSaturation + "0000"});
         }
       } else if (data.rdmo == "am__") {
-        markerName = "https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=A|0000" + markerSaturation + "|000000";
+//        markerName = "https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=A|0000" + markerSaturation + "|000000";
 //        markerName = "images/marker_AM" + markerSuffix + ".png";
+	      icon = L.MakiMarkers.icon({icon: "music", color: "#0000" + markerSaturation });
       } else if (data.rdmo == "wbfm") {
-            markerName = "https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=F|0000" + $arkerSaturation + "|000000";
+//            markerName = "https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=F|0000" + $arkerSaturation + "|000000";
 //        markerName = "images/marker_FM" + markerSuffix + ".png";
+	      icon = L.MakiMarkers.icon({icon: "music", color: "#0000" + markerSaturation});
       }
 
-      return markerName;
+      return icon;
     }
 
     function seeAllGroups() {
       map.setCenter(new GLatLng(52, 0), 5);
     }
 
-    function addReceivers() {
-      GDownloadUrl(xmlUrl, function(data, responseCode) {
-        if (responseCode == 200) {
-          readReceiverXml(data);
+    function alertContents() {
+      if (httpRequest.readyState == 4) {
+        if (httpRequest.status == 200) {
+          readReceiverXml(httpRequest.responseXML);
 
-          // only try to re-request XML if we were successful this time
-          // (otherwise hunderds of 'alert' boxes can build up!)
-          if (updateAuto) {
+          if (updateAuto)
             setTimeout("updateMap()", updateTimems);
-          }
-        } else if (responseCode == -1) {
-          // this error seems to occur if browser is downloading another URL when this fires.
-          // just try again silently
-          if (updateAuto) {
-            setTimeout("updateMap()", updateTimems);
-          }
-//          alert("Data request timed out. Please try later.");
         } else {
-          alert("Request resulted in error. Check XML file (" + xmlUrl + ") is accessible and reload page.");
+          alert("ERROR: Couldn't open XML file (" + xmlUrl + ").");
         }
-      });
+      }
+    }
+
+    function makeRequest(url, func) {
+      httpRequest = false;
+
+      if (window.XMLHttpRequest) { // Mozilla, Safari,...
+        httpRequest = new XMLHttpRequest();
+        if (httpRequest.overrideMimeType) {
+          httpRequest.overrideMimeType('text/xml');
+        }
+      } else if (window.ActiveXObject) { // IE
+        try {
+          httpRequest = new ActiveXObject("Msxml2.XMLHTTP");
+        } catch (e) {
+          try {
+            httpRequest = new ActiveXObject("Microsoft.XMLHTTP");
+          } catch (e) {}
+        }
+      }
+
+      if (!httpRequest) {
+        alert('Giving up :( Cannot create an XMLHTTP instance');
+        return false;
+      }
+
+      if (typeof(func) != 'undefined')
+        httpRequest.onreadystatechange = func;
+
+      httpRequest.open('GET', url, true);
+      httpRequest.send(null);
+    }
+
+    function addReceivers() {
+      makeRequest(xmlUrl, alertContents) 
     }
 
     function markerFactory(receiver, point) {
-      receiver.marker = new GMarker(point, iconMarkerBase);
-      map.addOverlay(receiver.marker);
+      //receiver.marker = new GMarker(point, iconMarkerBase);
+      receiver.marker = L.marker(point);
+      receiver.marker.addTo(mymap);
+      //map.addOverlay(receiver.marker);
 
       // need to put <BR>s in here to pad bubble so that it opens at the correct size before the 
       // div tag is replaced with the actual reception data.
@@ -446,19 +491,27 @@
       htmlStatistics += "<div id=\"bubble_data3\"><BR><BR><BR><BR><BR></div>";
       htmlStatistics += "<div id=\"stats_data\"><BR><BR><BR><BR><BR></div>";
 
-      var infoTabs = [
-        new GInfoWindowTab("Current", htmlCurrent),
-        new GInfoWindowTab("History", htmlHistory),
-        new GInfoWindowTab("Stats", htmlStatistics)
-      ];
+      //var infoTabs = [
+      //  new GInfoWindowTab("Current", htmlCurrent),
+      //  new GInfoWindowTab("History", htmlHistory),
+      //  new GInfoWindowTab("Stats", htmlStatistics)
+      //];
+      receiver.marker.bindPopup(htmlCurrent);
+      if (hasCanvas) {
+        receiver.psdGraph = new Graph("psd_graph", Color.redColor());
+        receiver.impGraph = new Graph("imp_graph", Color.blueColor());
+        //receiver.rdbvHistoryGraph = new Graph("rdbv_history_graph", Color.greenColor());
+        //receiver.rwmmHistoryGraph = new Graph("rwmm_history_graph", Color.orangeColor());
+      }
 
-      createListener(receiver, infoTabs);
+      //createListener(receiver, infoTabs);
     }
 
-    function readReceiverXml(data) {
+    function readReceiverXml(xml) {
+
       var needToUpdateGroups = false;
 
-      var xml = GXml.parse(data);
+      //var xml = GXml.parse(data);
       recs = xml.documentElement.getElementsByTagName("receiver");
 
       xmlDate = findText(xml , "date");
@@ -473,7 +526,8 @@
         receiverData.parse(recs[index]);
         var name = receiverData.name;
 
-        var point = new GLatLng(parseFloat(receiverData.latitude), parseFloat(receiverData.longitude));
+        var point = L.latLng(parseFloat(receiverData.latitude), parseFloat(receiverData.longitude));
+
 
         if (typeof(receivers[name]) == "undefined") {
           receivers[name] = new Object();
@@ -483,7 +537,7 @@
           markerFactory(receivers[name], point);
           needToUpdateGroups = true;
         } else { // just update position
-          receivers[name].marker.setPoint(point);
+          receivers[name].marker.setLatLng(point);
         }
 
         receivers[name].data = receiverData;
@@ -495,17 +549,17 @@
         receivers[name].attributes["Label"] = receivers[name].data.stationLabel;
         receivers[name].attributes["Demod. Mode"] = receivers[name].data.mode;
 
-        receivers[name].marker.setImage(determineMarkerImage(receivers[name].data));
+        receivers[name].marker.setIcon(determineMarkerIcon(receivers[name].data));
 
       }
 
       // now garbage collect any markers no longer present
       for (rxID in receivers) {
         if (typeof(newReceivers[rxID]) == "undefined" && receivers[rxID].type == "receiver") {
-          GEvent.clearListeners(receivers[rxID].marker, "click");
-          map.removeOverlay(receivers[rxID].marker);
-          if (infoWindowCurrentlyOpen == rxID)
-            map.closeInfoWindow();
+          //GEvent.clearListeners(receivers[rxID].marker, "click");
+          //map.removeOverlay(receivers[rxID].marker);
+          //if (infoWindowCurrentlyOpen == rxID)
+          //  map.closeInfoWindow();
 
           delete receivers[rxID];
           needToUpdateGroups = true;
@@ -519,12 +573,11 @@
 //          }
 //        }
 //      }
-
       displayGroup.update(needToUpdateGroups);
 
-      for (name in receivers) {
-        if (infoWindowCurrentlyOpen == name)
-          updateBubble(name);
+      for (rxID in receivers) {
+        if (receivers[rxID].marker.isPopupOpen()) 
+          updateBubble(rxID);
       }
     }
 
@@ -582,41 +635,54 @@
           }
         }
       }
-      if (GBrowserIsCompatible()) {
-        map = new GMap2(document.getElementById("map"));
-        map.setCenter(new GLatLng(54.00, 5.126643), 5);
-        map.setMapType(G_HYBRID_MAP);
-        map.addControl(new GMapTypeControl());
-        map.addControl(new GLargeMapControl());
-        map.addControl(new GOverviewMapControl());
-        map.addControl(new GScaleControl());
-        map.enableScrollWheelZoom();
 
-        iconMarkerBase = new GIcon();
-        iconMarkerBase.image = "images/marker_AM.png";
-        iconMarkerBase.shadow = "images/marker_shadow.png";
-        iconMarkerBase.iconSize = new GSize(20, 34);
-        iconMarkerBase.shadowSize = new GSize(37, 34);
-        iconMarkerBase.iconAnchor = new GPoint(9, 34);
-        iconMarkerBase.infoWindowAnchor = new GPoint(9, 2);
-        iconMarkerBase.infoShadowAnchor = new GPoint(18, 25);
+      mymap = L.map('mapid').setView([51.505, -0.09], 13);
+      L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+        maxZoom: 18,
+        id: 'mapbox/streets-v11',
+        tileSize: 512,
+        zoomOffset: -1,
+        accessToken: mapboxAccessToken //'pk.eyJ1Ijoib2xsaWVoYWZmZW5kZW4iLCJhIjoiY2ttZzhramVsM2NrajJxa25zZHUxeWV4cCJ9.Jo0rCixlc8ClesLmbSFuzA'
+      }).addTo(mymap);
 
-        iconMarkerTransmitter = new GIcon();
-        iconMarkerTransmitter.image = "images/marker_transmitter.png";
-        iconMarkerTransmitter.shadow = "images/marker_transmitter_shadow.png";
-        iconMarkerTransmitter.iconSize = new GSize(20, 33);
-        iconMarkerTransmitter.shadowSize = new GSize(34, 33);
-        iconMarkerTransmitter.iconAnchor = new GPoint(10, 33);
-        iconMarkerTransmitter.infoWindowAnchor = new GPoint(10, 33);
-        iconMarkerTransmitter.infoShadowAnchor = new GPoint(10, 33);
+      L.MakiMarkers.accessToken = mapboxAccessToken
 
-        addTransmitters();
+      //if (GBrowserIsCompatible()) {
+      //  map = new GMap2(document.getElementById("map"));
+      //  map.setCenter(new GLatLng(54.00, 5.126643), 5);
+      //  map.setMapType(G_HYBRID_MAP);
+      //  map.addControl(new GMapTypeControl());
+      //  map.addControl(new GLargeMapControl());
+      //  map.addControl(new GOverviewMapControl());
+      //  map.addControl(new GScaleControl());
+      //  map.enableScrollWheelZoom();
+
+      //  iconMarkerBase = new GIcon();
+      //  iconMarkerBase.image = "images/marker_AM.png";
+      //  iconMarkerBase.shadow = "images/marker_shadow.png";
+      //  iconMarkerBase.iconSize = new GSize(20, 34);
+      //  iconMarkerBase.shadowSize = new GSize(37, 34);
+      //  iconMarkerBase.iconAnchor = new GPoint(9, 34);
+      //  iconMarkerBase.infoWindowAnchor = new GPoint(9, 2);
+      //  iconMarkerBase.infoShadowAnchor = new GPoint(18, 25);
+
+      //  iconMarkerTransmitter = new GIcon();
+      //  iconMarkerTransmitter.image = "images/marker_transmitter.png";
+      //  iconMarkerTransmitter.shadow = "images/marker_transmitter_shadow.png";
+      //  iconMarkerTransmitter.iconSize = new GSize(20, 33);
+      //  iconMarkerTransmitter.shadowSize = new GSize(34, 33);
+      //  iconMarkerTransmitter.iconAnchor = new GPoint(10, 33);
+      //  iconMarkerTransmitter.infoWindowAnchor = new GPoint(10, 33);
+      //  iconMarkerTransmitter.infoShadowAnchor = new GPoint(10, 33);
+
+      //  addTransmitters();
         displayGroup.create("display_group", [ "Frequency", "Label", "Demod. Mode" ]);
         addReceivers();
-        displayGroup.defaultShow("Frequency"); //  , { "Frequency": ["855"]}); //, { "Frequency": ["855"],
+      //  displayGroup.defaultShow("Frequency"); //  , { "Frequency": ["855"]}); //, { "Frequency": ["855"],
 //                                                "Label": [ "BBC Devon Trial" ],
 //                                                "None": [ "m_CNH_", "m_MTY_", "m_NFR_", "m_NHT_", "m_PYZ_", "m_PY__"] });
-      }
+      //}
     }
 
     //]]>
@@ -632,7 +698,7 @@
         <div id="display_group" class="checklist" style="height: 100%"></div>
       </td>
       <td valign="top" width="75%" height="100%" style="border:solid 1px">
-        <div id="map" style="width: 100%; height: 100%; margin: auto"></div>
+        <div id="mapid" height="180px" style="width: 100%; height: 100%; margin: auto"></div>
       </td>
     </tr>    
     <tr>

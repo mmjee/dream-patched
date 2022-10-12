@@ -33,7 +33,8 @@ set KML_INITIAL_VIEW_RANGE 2000000
 
 set KML_HTTP_SERVER_ROOT http://drmvcs.rd.bbc.co.uk/drm
 
-set RSI_FILES_ROOT /var/www/rsci
+#set RSI_FILES_ROOT /var/www/rsci
+set RSI_FILES_ROOT /home/drm/rsci
 # TCP server port which receiving sites will connect to (probably using netcat)
 set SITES_SERVER_PORT 12001 
 

@@ -138,7 +138,7 @@ proc ProcessSiteInput {socket addr port} {
 
 		set tail [string range $inData [expr $len + $headerLen] [expr $len + $headerLen + 2]]
 
-		puts [format "DCP: len: %4x\t seq: %4x\tcrc: %1x\tversion: %x.%x %s" $len $seq $crc $maj $min $pt]
+		#puts [format "DCP: len: %4x\t seq: %4x\tcrc: %1x\tversion: %x.%x %s" $len $seq $crc $maj $min $pt]
 		ProcessStatusPacket $socket $id $header $payload $tail
 		set sitePacketCount($socket) [expr $sitePacketCount($socket) + 1]
 
@@ -214,6 +214,15 @@ proc ProcessStatusPacket {socket id header tagContent tail} {
 
 	}
 
+	if [info exists tags(fmjd)] {
+		set fmjd $tags(fmjd)
+		set mjd [lindex $fmjd 0]
+		set frac [lindex $fmjd 1]
+		#puts [clock format [clock scan [string cat "1970-01-01 00:00:00 GMT + " [expr $mjd - 40587] " days + " [expr $frac / 10000] " seconds"]]]
+	} else {
+		#puts "no fmjd tag"
+	}
+
 	#puts "lengths of parts [string length $id] [string length $header] [string length $tagContent] [string length $tail]"
 	# Forward as UDP packet to the collector script	
 	puts -nonewline $ttyCollector "$id$header$tagContent$tail"
@@ -238,6 +247,36 @@ proc ProcessStatusPacket {socket id header tagContent tail} {
 
 	ForwardToSubscribers $rxID $id$header$tagContent$tail
 
+	#WriteRSCIFile $rxID $id$header$tagContent$tail
+
+}
+
+proc WriteRSCIFile {rxID packet} {
+	set filename [MakeSinglePacketFileName $rxID]
+	set ttyFile [OpenRSCIFile $filename]
+	puts -nonewline $ttyFile $packet
+	close $ttyFile
+}
+
+proc MakeSinglePacketFileName {rxID} {
+  global RSI_FILES_ROOT
+  set currentMilliseconds [clock milliseconds]
+  set currentTime [expr $currentMilliseconds / 1000]
+  set currentMilliseconds [expr $currentMilliseconds % 1000]
+  set currentMilliseconds [format "%03d" $currentMilliseconds]
+
+  set currentDate [clock format $currentTime -format "%Y-%m-%d" -gmt 1]
+  set currenthhmmss [clock format $currentTime -format "%H-%M-%S" -gmt 1]
+  set dir [file join $RSI_FILES_ROOT "$rxID" "${currentDate}"]
+  file mkdir $dir
+  return [file join "$dir" "${rxID}_${currentDate}_${currenthhmmss}_${currentMilliseconds}.rsA"]
+}
+
+proc OpenRSCIFile {fileName} {
+  puts "Opening file: $fileName"
+  set ttyFile [open $fileName w]
+  fconfigure $ttyFile -translation binary
+  return $ttyFile
 }
 
 proc DecSubscriberCount {rxID} {
@@ -270,7 +309,7 @@ proc ForwardToSubscribers {rxID packet} {
 	foreach socket [array names subscribers] {
 		#puts "Iffing $subscribers($socket) against $rxID"
 		if {$subscribers($socket) == $rxID} {
-			puts "Forwarding to $socket length [string length $packet]"
+			#puts "Forwarding to $socket length [string length $packet]"
 			puts -nonewline $socket $packet
 			if [catch {flush $socket}] {
 				catch {close $socket}
@@ -488,20 +527,25 @@ proc ConfigureControlPort {} {
 }
 
 proc ProcessControlInput {socket} {
-    global idToSocket
-    set input [read $socket]
-    puts "Got control input\n$input\n"
-    if {[scan $input "<cfre rxID=\"%\[^\"\]\" mode=\"%\[^\"\]\">%d</cfre>" rxIDs mode freq] == 3} {
-      puts "matched ids: $rxIDs freq $freq"
-      foreach rxID [split $rxIDs ","] {
-          puts "tuning $rxID to $freq\n"
-        if [info exists idToSocket($rxID)] {
-          puts "Socket $idToSocket($rxID)"
-          #CmdSetFrequency $idToSocket($rxID) $freq "drm_" 0 0
-          CmdSetFrequency $idToSocket($rxID) $freq $mode 0 0
+    if [catch {
+      global idToSocket
+      set input [read $socket]
+      puts "Got control input\n$input\n"
+      if {[scan $input "<cfre rxID=\"%\[^\"\]\" mode=\"%\[^\"\]\">%d</cfre>" rxIDs mode freq] == 3} {
+        puts "matched ids: $rxIDs freq $freq"
+        foreach rxID [split $rxIDs ","] {
+            puts "tuning $rxID to $freq\n"
+          if [info exists idToSocket($rxID)] {
+            puts "Socket $idToSocket($rxID)"
+            #CmdSetFrequency $idToSocket($rxID) $freq "drm_" 0 0
+            CmdSetFrequency $idToSocket($rxID) $freq $mode 0 0
+          }
         }
       }
+    } result] {
+	    puts "Error processing control input: $result"
     }
+    puts "Finished processing control input"
 
 }
 ##### Main #####
