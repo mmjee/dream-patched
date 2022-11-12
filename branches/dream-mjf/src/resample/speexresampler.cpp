@@ -1,3 +1,4 @@
+#ifdef HAVE_SPEEX
 #include "speexresampler.h"
 #include <cstring>
 #include <iostream>
@@ -134,3 +135,4 @@ void SpeexResampler::Init(int iNewOutputBlockSize, int iInputSamplerate, int iOu
         Free();
     }
 }
+#endif //HAVE_SPEEX

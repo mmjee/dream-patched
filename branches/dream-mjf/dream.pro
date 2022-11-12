@@ -151,7 +151,7 @@ macx {
         CONFIG += hamlib
     }
     packagesExist(speex) {
-        CONFIG += libspeexdsp
+        CONFIG += speexdsp
     }
     #packagesExist(libgps) {
     exists(/usr/include/gps.h) | \
@@ -260,9 +260,12 @@ contains(QMAKE_CC, i686-w64-mingw32.static-gcc) {
   CONFIG += mxe
 }
 win32 {
+# NOTE: Assumes Windows version built using external packages located in the same directory
+#       Modify all INCLUDE and LIB link paths appropriately before building Dream in Qt Creator
   CONFIG += fdk-aac
-  LIBS += -lwpcap -lpacket -lmincore
-  DEFINES += HAVE_SETUPAPI HAVE_LIBZ _CRT_SECURE_NO_WARNINGS HAVE_LIBZ HAVE_LIBPCAP
+  INCLUDEPATH += $$PWD/../fdk-aac-2.0.2/include $$PWD/../winpcap-master/Include
+  LIBS += -L$$PWD/../fdk-aac-2.0.2/lib -L$$PWD/../winpcap-master/Lib/x64 -lwpcap -lpacket -lmincore
+  DEFINES += HAVE_SETUPAPI HAVE_LIBZ _CRT_SECURE_NO_WARNINGS HAVE_LIBZ HAVE_LIBPCAP USE_WINDOWS
   SOURCES += src/windows/Pacer.cpp src/windows/platform_util.cpp
   HEADERS += src/windows/platform_util.h
   LIBS += -lsetupapi
@@ -282,10 +285,11 @@ win32 {
   }
   else {
 	DEFINES += NOMINMAX
-	QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:libcmt.lib
-	QMAKE_LFLAGS_DEBUG += /NODEFAULTLIB:libcmtd.lib
-	QMAKE_LFLAGS_DEBUG += /NODEFAULTLIB:libcmt.lib
-	LIBS += -lzlib -llibfftw3-3
+        QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:msvcrt.lib
+        QMAKE_LFLAGS_DEBUG += /NODEFAULTLIB:libcmtd.lib /NODEFAULTLIB:msvcrtd.lib
+#	LIBS += -lzlib -llibfftw3-3
+        LIBS += -L$$PWD/../zlib-1.2.3/dll_x64 -lzlibwapi -L$$PWD/../fftw -llibfftw3-3
+        INCLUDEPATH += $$PWD/../zlib-1.2.3 $$PWD/../fftw/
   }
   mxe {
     message('MXE')
@@ -299,9 +303,11 @@ win32 {
     #!console:QT += multimedia
   }
   else {
-    exists($$PWD/include/speex/speex_preprocess.h) {
-      CONFIG += speexdsp
-    }
+#    exists($$PWD/../speexdsp-SpeexDSP-1.2.1/include/speex/speex_preprocess.h) {
+#      CONFIG += speexdsp
+#      INCLUDEPATH += $$PWD/../speexdsp-SpeexDSP-1.2.1/include
+#      LIBS += -L$$PWD/../speexdsp-SpeexDSP-1.2.1/lib
+#    }
     exists($$PWD/include/hamlib/rig.h) {
       CONFIG += hamlib
     }
@@ -342,7 +348,8 @@ sndfile {
 }
 speexdsp {
      DEFINES += HAVE_SPEEX
-     LIBS += -lspeexdsp
+     unix:LIBS += -lspeexdsp
+     win32:!mxe:LIBS += -llibspeexdsp
      message("with libspeexdsp")
 }
 gps {
@@ -384,12 +391,16 @@ qwt {
         LIBS += -framework qwt
     }
     win32 {
-        INCLUDEPATH += $$PWD/include/qwt
+#        INCLUDEPATH += $$PWD/include/qwt
+        INCLUDEPATH += $$PWD/../Qwt-6.2.0/src
+        DEPENDPATH += $$PWD/../Qwt-6.2.0/src
         CONFIG(debug, debug|release) {
-            LIBS += -lqwtd
+#            LIBS += -lqwtd
+            LIBS += -L$$PWD/../Qwt-6.2.0/lib/ -lqwtd
         }
         CONFIG(release, debug|release) {
-            LIBS += -lqwt
+#            LIBS += -lqwt
+            LIBS += -L$$PWD/../Qwt-6.2.0/lib/ -lqwt
         }
     }
     unix!macx {

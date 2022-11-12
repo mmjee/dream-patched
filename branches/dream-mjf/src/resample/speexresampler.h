@@ -1,3 +1,4 @@
+#ifdef HAVE_SPEEX
 #ifndef SPEEXRESAMPLER_H
 #define SPEEXRESAMPLER_H
 
@@ -24,3 +25,4 @@ private:
 };
 
 #endif // SPEEXRESAMPLER_H
+#endif // HAVE_SPEEX

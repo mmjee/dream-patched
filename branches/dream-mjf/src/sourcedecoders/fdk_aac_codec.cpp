@@ -27,8 +27,13 @@
 \******************************************************************************/
 
 #include "fdk_aac_codec.h"
+#ifdef USE_WINDOWS
+#include <aacenc_lib.h>
+#include <FDK_audio.h>
+#else
 #include <fdk-aac/aacenc_lib.h>
 #include <fdk-aac/FDK_audio.h>
+#endif
 #include "src/SDC/SDC.h"
 #include <cstring>
 

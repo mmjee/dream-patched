@@ -30,8 +30,13 @@
 #define FDK_AAC_CODEC_H_
 
 #include "AudioCodec.h"
+#ifdef USE_WINDOWS
+#include <aacdecoder_lib.h>
+#include <aacenc_lib.h>
+#else
 #include <fdk-aac/aacdecoder_lib.h>
 #include <fdk-aac/aacenc_lib.h>
+#endif
 
 class FdkAacCodec : public CAudioCodec
 {
