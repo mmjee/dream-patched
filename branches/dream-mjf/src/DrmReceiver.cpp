@@ -36,6 +36,7 @@
 #include "util/Settings.h"
 #include "util/Utilities.h"
 #include "util/FileTyper.h"
+#include "darkmode.h"
 
 #include "sound/sound.h"
 #include "sound/soundnull.h"
@@ -1642,6 +1643,9 @@ CDRMReceiver::LoadSettings()
     Parameters.lenient_RSCI = permissive;
 
     Parameters.Unlock();
+#ifdef _WIN32
+    SetDarkMode();
+#endif
 }
 
 void

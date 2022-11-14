@@ -264,8 +264,6 @@ contains(QMAKE_CC, i686-w64-mingw32.static-gcc) {
   CONFIG += mxe
 }
 win32 {
-# NOTE: Assumes Windows version built using external packages located in the same directory
-#       Modify all INCLUDE and LIB link paths appropriately before building Dream in Qt Creator
   CONFIG += fdk-aac
   LIBS += -lwpcap -lpacket -lmincore
   DEFINES += HAVE_SETUPAPI HAVE_LIBZ _CRT_SECURE_NO_WARNINGS HAVE_LIBZ HAVE_LIBPCAP
@@ -458,6 +456,7 @@ HEADERS += \
     src/chanest/TimeWiener.h \
     src/creceivedata.h \
     src/ctransmitdata.h \
+    src/darkmode.h \
     src/datadecoding/DABMOT.h \
     src/datadecoding/DataDecoder.h \
     src/datadecoding/DataEncoder.h \
@@ -590,6 +589,7 @@ SOURCES += \
     src/chanest/TimeWiener.cpp \
     src/creceivedata.cpp \
     src/ctransmitdata.cpp \
+    src/darkmode.cpp \
     src/datadecoding/DABMOT.cpp \
     src/datadecoding/DataDecoder.cpp \
     src/datadecoding/DataEncoder.cpp \
