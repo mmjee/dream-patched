@@ -11,6 +11,10 @@ contains(QT_VERSION, ^4\\..*) {
 contains(QT_VERSION, ^5\\..*) {
     VERSION_MESSAGE = Qt 5
 }
+contains(QT_VERSION, ^6\\..*) {
+    VERSION_MESSAGE = Qt 6
+    QT += core5compat
+}
 CONFIG(debug, debug|release) {
     DEBUG_MESSAGE = debug
 }
@@ -263,9 +267,8 @@ win32 {
 # NOTE: Assumes Windows version built using external packages located in the same directory
 #       Modify all INCLUDE and LIB link paths appropriately before building Dream in Qt Creator
   CONFIG += fdk-aac
-  INCLUDEPATH += $$PWD/../fdk-aac-2.0.2/include $$PWD/../winpcap-master/Include
-  LIBS += -L$$PWD/../fdk-aac-2.0.2/lib -L$$PWD/../winpcap-master/Lib/x64 -lwpcap -lpacket -lmincore
-  DEFINES += HAVE_SETUPAPI HAVE_LIBZ _CRT_SECURE_NO_WARNINGS HAVE_LIBZ HAVE_LIBPCAP USE_WINDOWS
+  LIBS += -lwpcap -lpacket -lmincore
+  DEFINES += HAVE_SETUPAPI HAVE_LIBZ _CRT_SECURE_NO_WARNINGS HAVE_LIBZ HAVE_LIBPCAP
   SOURCES += src/windows/Pacer.cpp src/windows/platform_util.cpp
   HEADERS += src/windows/platform_util.h
   LIBS += -lsetupapi
@@ -285,11 +288,10 @@ win32 {
   }
   else {
 	DEFINES += NOMINMAX
-        QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:msvcrt.lib
-        QMAKE_LFLAGS_DEBUG += /NODEFAULTLIB:libcmtd.lib /NODEFAULTLIB:msvcrtd.lib
-#	LIBS += -lzlib -llibfftw3-3
-        LIBS += -L$$PWD/../zlib-1.2.3/dll_x64 -lzlibwapi -L$$PWD/../fftw -llibfftw3-3
-        INCLUDEPATH += $$PWD/../zlib-1.2.3 $$PWD/../fftw/
+        QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:libcmtd.lib
+        QMAKE_LFLAGS_DEBUG += /NODEFAULTLIB:libcmtd.lib
+        QMAKE_LFLAGS_DEBUG += /NODEFAULTLIB:libcmt.lib
+        LIBS += -lzlib1 -llibfftw3-3
   }
   mxe {
     message('MXE')
@@ -303,11 +305,9 @@ win32 {
     #!console:QT += multimedia
   }
   else {
-#    exists($$PWD/../speexdsp-SpeexDSP-1.2.1/include/speex/speex_preprocess.h) {
-#      CONFIG += speexdsp
-#      INCLUDEPATH += $$PWD/../speexdsp-SpeexDSP-1.2.1/include
-#      LIBS += -L$$PWD/../speexdsp-SpeexDSP-1.2.1/lib
-#    }
+    exists($$PWD/include/speex/speex_preprocess.h) {
+      CONFIG += speexdsp
+    }
     exists($$PWD/include/hamlib/rig.h) {
       CONFIG += hamlib
     }
@@ -343,7 +343,7 @@ sndfile {
      DEFINES += HAVE_LIBSNDFILE
      unix:LIBS += -lsndfile
      win32:mxe:LIBS += -lsndfile -lvorbisenc -lvorbis -lFLAC -logg -lm
-     win32:!mxe:LIBS += -llibsndfile-1
+     win32:!mxe:LIBS += -lsndfile -lFLAC
      message("with libsndfile")
 }
 speexdsp {
@@ -391,16 +391,13 @@ qwt {
         LIBS += -framework qwt
     }
     win32 {
-#        INCLUDEPATH += $$PWD/include/qwt
-        INCLUDEPATH += $$PWD/../Qwt-6.2.0/src
-        DEPENDPATH += $$PWD/../Qwt-6.2.0/src
+        INCLUDEPATH += $$PWD/include/qwt
+        DEPENDPATH += $$PWD/include/qwt
         CONFIG(debug, debug|release) {
-#            LIBS += -lqwtd
-            LIBS += -L$$PWD/../Qwt-6.2.0/lib/ -lqwtd
+            LIBS += -lqwtd
         }
         CONFIG(release, debug|release) {
-#            LIBS += -lqwt
-            LIBS += -L$$PWD/../Qwt-6.2.0/lib/ -lqwt
+            LIBS += -lqwt
         }
     }
     unix!macx {
