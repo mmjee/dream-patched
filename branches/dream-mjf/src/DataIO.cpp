@@ -156,6 +156,7 @@ CReadData::SetSoundInterface(string device)
     }
 #else
     if(pSound != nullptr) {
+        pSound->Close();
         delete pSound;
         pSound = nullptr;
     }
@@ -228,6 +229,7 @@ CWriteData::SetSoundInterface(string device)
     }
 #else
     if(pSound != nullptr) {
+        pSound->Close();
         delete pSound;
         pSound = nullptr;
     }
