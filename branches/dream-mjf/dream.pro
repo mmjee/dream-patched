@@ -1,5 +1,6 @@
 TEMPLATE = app
-CONFIG += warn_on
+PREFIX = /opt/homebrew
+CONFIG += warn_on sdk_no_version_check
 TARGET = dream
 OBJECTS_DIR = obj
 DEFINES += EXECUTABLE_NAME=$$TARGET
@@ -141,10 +142,10 @@ macx {
         }
     }
     QT_CONFIG -= no-pkg-config
-    PKG_CONFIG = /usr/local/bin/pkg-config
-    INCLUDEPATH += /usr/local/include
-    LIBS += -L/usr/local/lib
-    QMAKE_LFLAGS += -F/usr/local/lib
+    PKG_CONFIG = $$PREFIX/bin/pkg-config
+    INCLUDEPATH += $$PREFIX/include
+    LIBS += -L$$PREFIX/lib
+    QMAKE_LFLAGS += -F$$PREFIX/lib
     LIBS += -framework CoreFoundation -framework CoreServices -lpcap
     LIBS += -framework CoreAudio -framework AudioToolbox -framework AudioUnit
     DEFINES += HAVE_LIBPCAP
@@ -159,7 +160,7 @@ macx {
     }
     #packagesExist(libgps) {
     exists(/usr/include/gps.h) | \
-    exists(/usr/local/include/gps.h) {
+    exists($$PREFIX/include/gps.h) {
         CONFIG += gps
     }
     packagesExist(fdk-aac) {
@@ -208,13 +209,13 @@ unix:!cross_compile {
     !sound {
          # check for pulseaudio before portaudio
          exists(/usr/include/pulse/pulseaudio.h) | \
-         exists(/usr/local/include/pulse/pulseaudio.h) {
+         exists($$PREFIX/include/pulse/pulseaudio.h) {
          #packagesExist(libpulse)
           CONFIG += pulseaudio sound
          }
          else {
            exists(/usr/include/portaudio.h) | \
-           exists(/usr/local/include/portaudio.h) {
+           exists($$PREFIX/include/portaudio.h) {
            #packagesExist(portaudio-2.0)
               CONFIG += portaudio sound
            }
@@ -239,23 +240,23 @@ unix:!cross_compile {
     }
     else {
       exists(/usr/include/sndfile.h) | \
-      exists(/usr/local/include/sndfile.h) {
+      exists($$PREFIX/include/sndfile.h) {
         CONFIG += sndfile
       }
       exists(/usr/include/hamlib/rig.h) | \
-      exists(/usr/local/include/hamlib/rig.h) {
+      exists($$PREFIX/include/hamlib/rig.h) {
           CONFIG += hamlib
       }
       exists(/usr/include/gps.h) | \
-      exists(/usr/local/include/gps.h) {
+      exists($$PREFIX/include/gps.h) {
         CONFIG += gps
       }
       exists(/usr/include/opus/opus.h) | \
-      exists(/usr/local/include/opus/opus.h) {
+      exists($$PREFIX/include/opus/opus.h) {
        CONFIG += opus
       }
       exists(/usr/include/speex/speex_preprocess.h) | \
-      exists(/usr/local/include/speex/speex_preprocess.h) {
+      exists($$PREFIX/include/speex/speex_preprocess.h) {
        CONFIG += speexdsp
       }
     }
@@ -385,8 +386,8 @@ qwt {
     QT += svg concurrent
     macx {
 #        INCLUDEPATH += /Library/Frameworks/qwt.framework/Headers
-        INCLUDEPATH += /usr/local/lib/qwt.framework/Headers
-        LIBS += -framework qwt
+        INCLUDEPATH += $$PREFIX/Cellar/qwt-qt5/6.2.0/lib/qwt.framework/Headers
+        LIBS += -F$$PREFIX/Cellar/qwt-qt5/6.2.0/lib -framework qwt
     }
     win32 {
         INCLUDEPATH += $$PWD/include/qwt
@@ -435,7 +436,7 @@ pulseaudio {
     unix {
         macx {
             INCLUDEPATH += /usr/local/opt/pulseaudio/include
-            LIBS += -L/usr/local/opt/pulseaudio/lib -lpulse
+            LIBS += -L$$PREFIX/opt/pulseaudio/lib -lpulse
         }
         else {
             PKGCONFIG += libpulse
