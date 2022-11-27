@@ -1,5 +1,4 @@
 TEMPLATE = app
-PREFIX = /opt/homebrew
 CONFIG += warn_on sdk_no_version_check
 TARGET = dream
 OBJECTS_DIR = obj
@@ -15,6 +14,14 @@ contains(QT_VERSION, ^5\\..*) {
 contains(QT_VERSION, ^6\\..*) {
     VERSION_MESSAGE = Qt 6
     QT += core5compat
+}
+unix:!cross_compile {
+    message (QMAKE_HOST is $$QMAKE_HOST.arch)
+    equals(QMAKE_HOST.arch, arm64) {
+        PREFIX = /opt/homebrew
+    } else {
+        PREFIX = /usr/local
+    }
 }
 CONFIG(debug, debug|release) {
     DEBUG_MESSAGE = debug
@@ -386,8 +393,9 @@ qwt {
     QT += svg concurrent
     macx {
 #        INCLUDEPATH += /Library/Frameworks/qwt.framework/Headers
-        INCLUDEPATH += $$PREFIX/Cellar/qwt-qt5/6.2.0/lib/qwt.framework/Headers
-        LIBS += -F$$PREFIX/Cellar/qwt-qt5/6.2.0/lib -framework qwt
+        INCLUDEPATH += $$PREFIX/opt/qwt-qt5/lib/qwt.framework/Headers
+        QMAKE_LFLAGS += -F$$PREFIX/opt/qwt-qt5/lib
+        LIBS += -framework qwt
     }
     win32 {
         INCLUDEPATH += $$PWD/include/qwt
