@@ -135,4 +135,4 @@ void SpeexResampler::Init(int iNewOutputBlockSize, int iInputSamplerate, int iOu
         Free();
     }
 }
-#endif //HAVE_SPEEX
+#endif // HAVE_SPEEX

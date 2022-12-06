@@ -111,6 +111,7 @@ void CDownstreamDI::SendLockedFrame(CParameter& Parameter,
 	TagItemGeneratorRINF.GenTag(Parameter.sReceiverID);	/* rinf */
 
 	/* RSCI tags ------------------------------------------------------------ */
+    TagItemGeneratorFracModJulDate.GenTag();
 	TagItemGeneratorRAFS.GenTag(Parameter);
 	TagItemGeneratorRWMF.GenTag(true, Parameter.rWMERFAC); /* WMER for FAC */
 	TagItemGeneratorRWMM.GenTag(true, Parameter.rWMERMSC); /* WMER for MSC */
@@ -171,6 +172,7 @@ void CDownstreamDI::SendUnlockedFrame(CParameter& Parameter)
 
 	/* Generate some other tags */
 	TagItemGeneratorRINF.GenTag(Parameter.sReceiverID);	/* rinf */
+    TagItemGeneratorFracModJulDate.GenTag(); /* fmjd */
 	TagItemGeneratorRxFrequency.GenTag(true, Parameter.GetFrequency()); /* rfre */
 	TagItemGeneratorRxActivated.GenTag(true); /* ract */
 	_REAL rSigStr = Parameter.SigStrstat.getCurrent();
@@ -248,6 +250,9 @@ void CDownstreamDI::GenDIPacket()
 
 	/* dlfc tag */
 	TagPacketGenerator.AddTagItem(&TagItemGeneratorLoFrCnt);
+
+    /* fmjd tag */
+    TagPacketGenerator.AddTagItem(&TagItemGeneratorFracModJulDate);
 
 	/* *ptr tag */
 	TagPacketGenerator.AddTagItem(&TagItemGeneratorProTyMDI);
@@ -378,10 +383,14 @@ void CDownstreamDI::GetNextPacket(CSingleBuffer<_BINARY>&)
 bool
 CDownstreamDI::AddSubscriber(const string& dest, const char profile, const string& origin)
 {
+    cerr<<"CDownstreamDI::AddSubscriber("<<dest<<","<<profile<<","<<origin<<")"<<endl;
 	CRSISubscriber* subs = nullptr;
 	/* heuristic to test for file or socket - TODO - better syntax */
-	size_t p = dest.find_first_not_of("TPtp0123456789.:");
-	if (p != string::npos)
+    if (dest.substr(0,4)=="tcp:" || dest.substr(0,4)=="udp:")
+    {
+        subs = new CRSISubscriberSocket;
+    }
+    else if (dest.find_first_not_of("TPtp0123456789.:") != string::npos)
 	{
 		subs = new CRSISubscriberFile();
 	}
@@ -400,8 +409,7 @@ CDownstreamDI::AddSubscriber(const string& dest, const char profile, const strin
 	bool bOK = true;
 	if (dest != "")
 	{
-		bOK &= subs->SetDestination(dest);
-		if (bOK)
+        subs->SetDestination(dest);
 		{
 			bMDIOutEnabled = true;
 			subs->SetProfile(profile);

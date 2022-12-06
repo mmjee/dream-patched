@@ -34,14 +34,15 @@
 # include <QAudioInput>
 # include <QSet>
 #endif
-#include "sound/sound.h"
+//#include "sound/sound.h"
+#include "sound/soundinterfacefactory.h"
 
 /* Implementation *************************************************************/
 /******************************************************************************\
 * MSC data                                                                    *
 \******************************************************************************/
 /* Transmitter -------------------------------------------------------------- */
-void CReadData::ProcessDataInternal(CParameter&)
+void CReadData::ProcessDataInternal(CParameter& Parameters)
 {
     /* Get data from sound interface */
     if (pSound == nullptr)
@@ -60,7 +61,7 @@ void CReadData::ProcessDataInternal(CParameter&)
     }
     else
     {
-        pSound->Read(vecsSoundBuffer);
+        pSound->Read(vecsSoundBuffer, Parameters);
     }
     /* Write data to output buffer */
     for (int i = 0; i < iOutputBlockSize; i++)
@@ -77,8 +78,8 @@ void CReadData::InitInternal(CParameter& Parameters)
 
     /* Define block-size for output, an audio frame always corresponds
        to 400 ms. We use always stereo blocks */
-    iOutputBlockSize = int(real(iSampleRate) *
-                              real(0.4) /* 400 ms */ * 2 /* stereo */);
+    iOutputBlockSize = (int) ((_REAL) iSampleRate *
+                              (_REAL) 0.4 /* 400 ms */ * 2 /* stereo */);
 
     /* Init sound interface and intermediate buffer */
     if(pSound) pSound->Init(iSampleRate, iOutputBlockSize, false);
@@ -113,9 +114,10 @@ void CReadData::Enumerate(std::vector<std::string>& names, std::vector<std::stri
         descriptions.push_back("");
     }
 #else
-    if(pSound==nullptr) pSound = new CSoundIn;
+    if(pSound==nullptr) pSound = CSoundInterfaceFactory::CreateSoundInInterface();
     pSound->Enumerate(names, descriptions, defaultInput);
 #endif
+    cout << "default input is " << defaultInput << endl;
 }
 
 void
@@ -160,17 +162,31 @@ CReadData::SetSoundInterface(string device)
         delete pSound;
         pSound = nullptr;
     }
-    pSound = new CSoundIn();
+    pSound = CSoundInterfaceFactory::CreateSoundInInterface();
     pSound->SetDev(device);
 #endif
 }
 
 
 /* Receiver ----------------------------------------------------------------- */
+CWriteData::CWriteData() :
+#ifdef QT_MULTIMEDIA_LIB
+    pAudioOutput(nullptr), pIODevice(nullptr),
+#endif
+    pSound(nullptr), /* Sound interface */
+    bMuteAudio(false), bDoWriteWaveFile(false),
+    bSoundBlocking(false), bNewSoundBlocking(false),
+    eOutChanSel(CS_BOTH_BOTH), rMixNormConst(MIX_OUT_CHAN_NORM_CONST),
+    iAudSampleRate(0), iNumSmpls4AudioSprectrum(0), iNumBlocksAvAudioSpec(0),
+    iMaxAudioFrequency(MAX_SPEC_AUDIO_FREQUENCY)
+{
+    /* Constructor */
+}
+
 void CWriteData::Stop()
 {
 #ifdef QT_MULTIMEDIA_LIB
-    if(pIODevice!=nullptr) pIODevice->close();
+    if(pAudioOutput!=nullptr) pIODevice->close();
 #endif
     if(pSound!=nullptr) pSound->Close();
 }
@@ -192,7 +208,7 @@ void CWriteData::Enumerate(std::vector<std::string>& names, std::vector<std::str
         descriptions.push_back("");
     }
 #else
-    if(pSound==nullptr) pSound = new CSoundOut;
+    if(pSound==nullptr) pSound = CSoundInterfaceFactory::CreateSoundOutInterface();
     pSound->Enumerate(names, descriptions, defaultOutput);
 #endif
 }
@@ -210,22 +226,21 @@ CWriteData::SetSoundInterface(string device)
     format.setChannelCount(2); // TODO
     format.setByteOrder(QAudioFormat::LittleEndian);
     format.setCodec("audio/pcm");
+    if(pAudioOutput != nullptr && pAudioOutput->state() == QAudio::ActiveState) {
+        pAudioOutput->stop();
+        delete pAudioOutput;
+        pAudioOutput = nullptr;
+    }
     foreach(const QAudioDeviceInfo& di, QAudioDeviceInfo::availableDevices(QAudio::AudioOutput))
     {
         if(device == di.deviceName().toStdString()) {
             QAudioFormat nearestFormat = di.nearestFormat(format);
-            QAudioOutput* pAudioOutput = new QAudioOutput(di, nearestFormat);
-            //pAudioOutput->setBufferSize(1000000);
-            pAudioOutput->setBufferSize(100000);
-            // TODO QIODevice needs to be declared in working thread
-            pIODevice = pAudioOutput->start();
-            fprintf(stderr, "buffer size %d\n", pAudioOutput->bufferSize());
-            fprintf(stderr, "period size %d\n", pAudioOutput->periodSize());
-            if(pAudioOutput->error()!=QAudio::NoError)
-            {
-                qDebug("Can't open audio output");
-            }
+            pAudioOutput = new QAudioOutput(di, nearestFormat);
+            break;
         }
+    }
+    if(pAudioOutput == nullptr) {
+        qDebug("Can't find audio output %s", device.c_str());
     }
 #else
     if(pSound != nullptr) {
@@ -233,7 +248,7 @@ CWriteData::SetSoundInterface(string device)
         delete pSound;
         pSound = nullptr;
     }
-    pSound = new CSoundOut();
+    pSound = CSoundInterfaceFactory::CreateSoundOutInterface();
     pSound->SetDev(device);
 #endif
 }
@@ -317,36 +332,21 @@ void CWriteData::ProcessDataInternal(CParameter& Parameters)
     bool bBad = true;
     if(pIODevice)
     {
-        qint64 l = 2*vecsTmpAudData.Size();
-        qint64 w = 0; //mjf - 03May19 - use full precision for write result
-
-        /*
+        int n = 2*vecsTmpAudData.Size(); // bytes to write 2 = sizeof(_SAMPLE)
         char* buf = reinterpret_cast<char*>(&vecsTmpAudData[0]);
-        int n = int(l);
-        //int m = 0;
-        m = 0;
-        int b = n / 10;
-        while(n > b) {
-            //int w = pIODevice->write(buf, b);
-            w = pIODevice->write(buf, b);
+        while(n>0) {
+            int bytesToWrite = pAudioOutput->bytesFree();
+            if(bytesToWrite == 0) {
+                pIODevice->waitForBytesWritten(-1);
+            }
+            if(n < bytesToWrite) {
+                bytesToWrite = n;
+            }
+            qint64 w = pIODevice->write(buf, bytesToWrite);
+            n -= w;
             buf += w;
-            b = w; // only write as much next time as it accepted this time
-            n -= b;
-            pIODevice->waitForBytesWritten(-1);
         }
-        if(n>0) {
-            m += pIODevice->write(buf, n);
-        }
-        if(n==0) {
-           bBad = false;
-        }
-        */
-
-        //while ((w != l) && (w != -1)) { //mjf - 03May19 - wait until requested buffer is fully written or fails
-        while (w == 0) { //mjf - 03May19 - wait until requested buffer is fully written or fails
-            w = pIODevice->write(reinterpret_cast<char*>(&vecsTmpAudData[0]),l);
-        }
-        bBad = (w==-1); //mjf - 03May19 - make bBad only if write() fails
+        bBad = false;
     }
 #else
     const bool bBad = pSound->Write(vecsTmpAudData);
@@ -414,7 +414,20 @@ void CWriteData::InitInternal(CParameter& Parameters)
         bSoundBlocking = bNewSoundBlocking;
 
     /* Init sound interface with blocking or non-blocking behaviour */
-    if(pSound!=nullptr) pSound->Init(iAudSampleRate, iAudFrameSize * 2 /* stereo */, bSoundBlocking);
+#ifdef QT_MULTIMEDIA_LIB
+    if(pAudioOutput != nullptr) {
+
+        pAudioOutput->setBufferSize(2 * 2 * 2 * iAudFrameSize); // room for two frames * bytes per sample * stereo
+        pIODevice = pAudioOutput->start();
+        cerr << "buffer size " << pAudioOutput->bufferSize() << endl;
+        cerr << "period size " << pAudioOutput->periodSize() << endl;
+        if(pAudioOutput->error()!=QAudio::NoError)
+        {
+            qDebug("Can't open audio output");
+        }
+    }
+#endif
+    if(pSound!=nullptr) pSound->Init(iAudSampleRate, iAudFrameSize * 2 /* stereo */, bSoundBlocking); // might be a sound file
 
     /* Init intermediate buffer needed for different channel selections */
     vecsTmpAudData.Init(iAudFrameSize * 2 /* stereo */);
@@ -425,20 +438,6 @@ void CWriteData::InitInternal(CParameter& Parameters)
 
     /* Define block-size for input (stereo input) */
     iInputBlockSize = iAudFrameSize * 2 /* stereo */;
-}
-
-CWriteData::CWriteData() :
-#ifdef QT_MULTIMEDIA_LIB
-    pIODevice(nullptr),
-#endif
-    pSound(nullptr), /* Sound interface */
-    bMuteAudio(false), bDoWriteWaveFile(false),
-    bSoundBlocking(false), bNewSoundBlocking(false),
-    eOutChanSel(CS_BOTH_BOTH), rMixNormConst(MIX_OUT_CHAN_NORM_CONST),
-    iAudSampleRate(0), iNumSmpls4AudioSprectrum(0), iNumBlocksAvAudioSpec(0),
-    iMaxAudioFrequency(MAX_SPEC_AUDIO_FREQUENCY)
-{
-    /* Constructor */
 }
 
 void CWriteData::StartWriteWaveFile(const string& strFileName)
@@ -467,8 +466,8 @@ void CWriteData::GetAudioSpec(CVector<_REAL>& vecrData,
     if (iAudSampleRate == 0)
     {
         /* Init output vectors to zero data */
-        vecrData.Init(0, real(0.0));
-        vecrScale.Init(0, real(0.0));
+        vecrData.Init(0, (_REAL) 0.0);
+        vecrScale.Init(0, (_REAL) 0.0);
         return;
     }
 
@@ -477,8 +476,8 @@ void CWriteData::GetAudioSpec(CVector<_REAL>& vecrData,
     const int iLenPowSpec = int(rLenPowSpec);
 
     /* Init output vectors */
-    vecrData.Init(iLenPowSpec, real(0.0));
-    vecrScale.Init(iLenPowSpec, real(0.0));
+    vecrData.Init(iLenPowSpec, (_REAL) 0.0);
+    vecrScale.Init(iLenPowSpec, (_REAL) 0.0);
 
     int i;
 
@@ -486,7 +485,7 @@ void CWriteData::GetAudioSpec(CVector<_REAL>& vecrData,
     Lock();
 
     /* Init vector storing the average spectrum with zeros */
-    CVector<_REAL> veccAvSpectrum(iLenPowSpec, real(0.0));
+    CVector<_REAL> veccAvSpectrum(iLenPowSpec, (_REAL) 0.0);
 
     int iCurPosInStream = 0;
     for (i = 0; i < iNumBlocksAvAudioSpec; i++)
@@ -514,12 +513,12 @@ void CWriteData::GetAudioSpec(CVector<_REAL>& vecrData,
     }
 
     /* Calculate norm constant and scale factor */
-    const _REAL rNormData = real(iNumSmpls4AudioSprectrum) *
+    const _REAL rNormData = (_REAL) iNumSmpls4AudioSprectrum *
                             iNumSmpls4AudioSprectrum * _MAXSHORT * _MAXSHORT *
                             iNumBlocksAvAudioSpec;
 
     /* Define scale factor for audio data */
-    const _REAL rFactorScale = real(iMaxAudioFrequency) / iLenPowSpec / 1000;
+    const _REAL rFactorScale = _REAL(iMaxAudioFrequency) / iLenPowSpec / 1000;
 
     /* Apply the normalization (due to the FFT) */
     for (i = 0; i < iLenPowSpec; i++)
@@ -527,11 +526,11 @@ void CWriteData::GetAudioSpec(CVector<_REAL>& vecrData,
         const _REAL rNormPowSpec = veccAvSpectrum[i] / rNormData;
 
         if (rNormPowSpec > 0)
-            vecrData[i] = real(10.0) * log10(rNormPowSpec);
+            vecrData[i] = 10.0 * log10(rNormPowSpec);
         else
             vecrData[i] = RET_VAL_LOG_0;
 
-        vecrScale[i] = real(i) * rFactorScale;
+        vecrScale[i] = _REAL(i) * rFactorScale;
     }
 
     /* Release resources */
@@ -733,8 +732,8 @@ void CWriteIQFile::InitInternal(CParameter& Parameters)
     iHilFiltBlLen = iSymbolBlockSize;
 
     /* Init state vector for filtering with zeros */
-    rvecZReal.Init(iHilFiltBlLen, CReal(0.0));
-    rvecZImag.Init(iHilFiltBlLen, CReal(0.0));
+    rvecZReal.Init(iHilFiltBlLen, (CReal) 0.0);
+    rvecZImag.Init(iHilFiltBlLen, (CReal) 0.0);
 
     /* "+ 1" because of the Nyquist frequency (filter in frequency domain) */
     cvecBReal.Init(iHilFiltBlLen + 1);
@@ -757,19 +756,19 @@ void CWriteIQFile::InitInternal(CParameter& Parameters)
 
     /* Set filter coefficients ---------------------------------------------- */
     /* Not really necessary since bandwidth will never be changed */
-    const CReal rStartPhase = CReal(iHilFiltBlLen) * crPi * rBPNormCentOffset;
+    const CReal rStartPhase = (CReal) iHilFiltBlLen * crPi * rBPNormCentOffset;
 
     /* Copy actual filter coefficients. It is important to initialize the
        vectors with zeros because we also do a zero-padding */
-    CRealVector rvecBReal(2 * iHilFiltBlLen, CReal(0.0));
-    CRealVector rvecBImag(2 * iHilFiltBlLen, CReal(0.0));
+    CRealVector rvecBReal(2 * iHilFiltBlLen, (CReal) 0.0);
+    CRealVector rvecBImag(2 * iHilFiltBlLen, (CReal) 0.0);
     for (int i = 0; i < iHilFiltBlLen; i++)
     {
         rvecBReal[i] = vecrFilter[i] *
-                       Cos(CReal(2.0) * crPi * rBPNormCentOffset * i - rStartPhase);
+                       Cos((CReal) 2.0 * crPi * rBPNormCentOffset * i - rStartPhase);
 
         rvecBImag[i] = vecrFilter[i] *
-                       Sin(CReal(2.0) * crPi * rBPNormCentOffset * i - rStartPhase);
+                       Sin((CReal) 2.0 * crPi * rBPNormCentOffset * i - rStartPhase);
     }
 
     /* Transformation in frequency domain for fft filter */

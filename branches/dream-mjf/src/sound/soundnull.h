@@ -40,11 +40,12 @@ public:
     virtual bool	Init(int, int, bool) {
         return true;
     }
-    virtual bool	Read(CVector<short>&) {
+    virtual bool	Read(CVector<short>&, CParameter &Parameters) {
         return false;
     }
-    virtual void		Enumerate(std::vector<std::string>&choices, std::vector<std::string>&) {
+    virtual void Enumerate(std::vector<std::string>&choices, std::vector<std::string>& desc, std::string&) {
         choices.push_back("(File or Network)");
+        desc.push_back("default");
     }
     virtual std::string		GetDev() {
         return sDev;
@@ -70,8 +71,9 @@ public:
         return false;
     }
 
-    virtual void		Enumerate(std::vector<std::string>& choices, std::vector<std::string>&){
+    virtual void		Enumerate(std::vector<std::string>& choices, std::vector<std::string>& desc, std::string&){
         choices.push_back("(None)");
+        desc.push_back("");
     }
 
     virtual std::string		GetDev() {

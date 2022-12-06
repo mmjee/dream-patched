@@ -33,7 +33,7 @@
 # include <QSet>
 # include <QAudioOutput>
 #else
-# include "sound/sound.h"
+# include "sound/soundinterfacefactory.h"
 #endif
 using namespace std;
 
@@ -80,7 +80,7 @@ cerr << "have output device " << n.toStdString() << endl;
         }
     }
 #else
-    if(pSound==nullptr) pSound = new CSoundOut;
+    if(pSound==nullptr) pSound = CSoundInterfaceFactory::CreateSoundOutInterface();
     pSound->Enumerate(names, descriptions, defaultOutput);    
 #endif
     cout << "default output is " << defaultOutput << endl;
@@ -116,7 +116,7 @@ void CTransmitData::SetSoundInterface(string device)
         delete pSound;
         pSound = nullptr;
     }
-    pSound = new CSoundOut();
+    pSound = CSoundInterfaceFactory::CreateSoundOutInterface();
     pSound->SetDev(device);
 #endif
 }

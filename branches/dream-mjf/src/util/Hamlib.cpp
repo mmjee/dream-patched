@@ -329,7 +329,7 @@ void
 CHamlib::SetComPort(const string & port)
 {
 	config["rig_pathname"] = port;
-    SetHamlibModelID(int(iHamlibModelID));
+	SetHamlibModelID(iHamlibModelID);
 }
 
 string CHamlib::GetComPort() const
@@ -424,7 +424,7 @@ CHamlib::LoadSettings(CSettings & s)
 		SetHamlibModelID(model);
 	}
 
-    s.Put("Hamlib", "hamlib-model", int(model));
+    s.Put("Hamlib", "hamlib-model", (int)model);
 	s.Put("Hamlib", "hamlib-config", strHamlibConf);
 	s.Put("Hamlib", "settings", strSettings);
 	s.Put("Hamlib", "freqoffset", iFreqOffset);
@@ -434,7 +434,7 @@ void
 CHamlib::SaveSettings(CSettings & s)
 {
 	/* Hamlib Model ID */
-    s.Put("Hamlib", "hamlib-model", int(iHamlibModelID));
+    s.Put("Hamlib", "hamlib-model", (int)iHamlibModelID);
 
 	/* Hamlib configuration string */
 	stringstream ss;

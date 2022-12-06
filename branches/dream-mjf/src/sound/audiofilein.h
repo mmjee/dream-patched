@@ -47,7 +47,7 @@ public:
     virtual int			GetSampleRate() {return iRequestedSampleRate;}
 
     virtual bool	Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking);
-    virtual bool 	Read(CVector<short>& psData);
+    virtual bool 	Read(CVector<short>& psData, CParameter &Parameters);
     virtual void 		Close();
 	virtual std::string GetVersion() { return "Dream Audio File Reader"; }
 

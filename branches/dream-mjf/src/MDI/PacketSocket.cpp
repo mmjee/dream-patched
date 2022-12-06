@@ -45,7 +45,7 @@ if I run it with the command:
 
 #ifdef _WIN32
 /* Always include winsock2.h before windows.h */
-# include <Ws2tcpip.h>
+# include <ws2tcpip.h>
 # include <windows.h>
 inline int inet_aton(const char*s, void * a) {
     ((in_addr*)a)->s_addr = inet_addr(s);
@@ -113,7 +113,16 @@ CPacketSocketNative::SendPacket(const vector < _BYTE > &vecbydata, uint32_t, uin
 		}
     }
     else
-        (void)send(s, (char*)&vecbydata[0], vecbydata.size(), 0);
+    {
+        int result = send(s, (char*)&vecbydata[0], vecbydata.size(), 0);
+        if (result<0)
+        {
+            cerr << "send() returned " << result <<endl;
+            //close(s); // commented by mjf because there is no function
+            s = INVALID_SOCKET;
+            SetDestination(dest);
+        }
+    }
 }
 
 vector<string>
@@ -145,6 +154,16 @@ CPacketSocketNative::SetDestination(const string & strNewAddr)
     AddrInterface.s_addr = htonl(INADDR_ANY);
     vector<string> parts = parseDest(strNewAddr);
 	HostAddrOut.sin_family = AF_INET; 
+    if (parts[0]=="tcp")
+    {
+        udp = false;
+        parts.erase(parts.begin());
+    }
+    else if (parts[0]=="udp")
+    {
+        udp = true;
+        parts.erase(parts.begin());
+    }
     if (tolower(parts[0][0])=='t')
     {
         udp = false;
@@ -172,6 +191,7 @@ CPacketSocketNative::SetDestination(const string & strNewAddr)
         break;
     default:
         bAddressOK = false;
+        cerr << "Address not ok" << endl;
     }
     if (udp)
     {
@@ -195,6 +215,7 @@ CPacketSocketNative::SetDestination(const string & strNewAddr)
             s = socket(AF_INET, SOCK_STREAM, 0);
         int n = connect(s, (sockaddr*)&HostAddrOut, sizeof(HostAddrOut));
         bAddressOK = n==0;
+        cerr<<"connect() returned "<<n<<"; errno="<<errno<<endl;
     }
     return bAddressOK;
 }
@@ -237,6 +258,7 @@ CPacketSocketNative::SetOrigin(const string & strNewAddr)
     if (strNewAddr == "-")
     {
         udp = false;
+        sourceAddr.sin_family = AF_INET;
         if (s == INVALID_SOCKET)
             s = socket(AF_INET, SOCK_STREAM, 0);
         return true;

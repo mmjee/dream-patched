@@ -69,6 +69,7 @@
 # include <alsa/version.h>
 #endif
 #ifdef USE_PORTAUDIO
+# include <portaudio.h>
 #endif
 #ifdef USE_PULSEAUDIO
 # include <pulse/pulseaudio.h>
@@ -226,7 +227,7 @@ CAboutDlg::CAboutDlg(QWidget* parent):
         "AMSS demodulator. <i>Oliver Haffenden</i> and <i>Julian Cable</i> (also <i>BBC</i>) rewrote "
         "the MDI interface and added RSCI support."
         " Many other GUI improvements were implemented by <i>Andrea Russo and David Flamand</i>."
-        "<br>Right now the code is mainly maintained by <i>David Flamand and Julian Cable</i>."
+        "<br>Right now the code is mainly maintained by <i>David Flamand, Julian Cable and Rafael Diniz</i>."
         " Quality Assurance and user testing is provided by <i>Simone St&ouml;ppler.</i>"
         "<br><br><br>"
         "<center><b>"+tr("CREDITS")+"</b></center><br>"
@@ -289,10 +290,10 @@ CAboutDlg::CAboutDlg(QWidget* parent):
     TextLabelVersion->setText(VersionString(this));
 
     /* Set author names in about dialog */
-    TextLabelAuthorNames->setText("Volker Fischer, Alexander Kurpiers, Andrea Russo\nJulian Cable, Andrew Murphy, Oliver Haffenden, David Flamand");
+    TextLabelAuthorNames->setText("Volker Fischer, Alexander Kurpiers, Andrea Russo, Julian Cable\nAndrew Murphy, Oliver Haffenden, David Flamand, Rafael Diniz");
 
     /* Set copyright year in about dialog */
-    TextLabelCopyright->setText("Copyright (C) 2001 - 2019");
+    TextLabelCopyright->setText("Copyright (C) 2001 - 2020");
 }
 
 /* Help Usage --------------------------------------------------------------- */

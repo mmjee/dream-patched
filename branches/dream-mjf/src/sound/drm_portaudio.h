@@ -39,7 +39,7 @@ public:
     CPaCommon(bool);
     virtual 		~CPaCommon();
 
-    virtual void	Enumerate(std::vector<std::string>& names, std::vector<std::string>& descriptions);
+    virtual void	Enumerate(std::vector<std::string>& names, std::vector<std::string>& descriptions, std::string& defaultDevice);
     virtual void	SetDev(std::string sNewDevice);
     virtual std::string	GetDev();
 
@@ -71,10 +71,10 @@ class CPaIn: public CSoundInInterface
 {
 public:
     CPaIn();
-    virtual 			~CPaIn();
-    virtual void	Enumerate(std::vector<std::string>& names, std::vector<std::string>& descriptions)
+    virtual 		~CPaIn();
+    virtual void Enumerate(std::vector<std::string>& names, std::vector<std::string>& descriptions, std::string& defaultDevice)
     {
-        hw.Enumerate(names, descriptions);
+        hw.Enumerate(names, descriptions, defaultDevice);
     }
     virtual void	SetDev(std::string sNewDevice)
     {
@@ -103,9 +103,9 @@ class CPaOut: public CSoundOutInterface
 public:
     CPaOut();
     virtual 			~CPaOut();
-    virtual void	Enumerate(std::vector<std::string>& names, std::vector<std::string>& descriptions)
+    virtual void	Enumerate(std::vector<std::string>& names, std::vector<std::string>& descriptions, std::string& defaultOutput)
     {
-        hw.Enumerate(names, descriptions);
+        hw.Enumerate(names, descriptions, defaultOutput);
     }
     virtual void	SetDev(std::string sNewDevice)
     {

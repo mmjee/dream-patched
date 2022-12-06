@@ -62,7 +62,7 @@ public:
         case CAudioParam::AC_xHE_AAC: return bCanDecodexHE_AAC;
         default: return false;
         }
-        //return false;
+        return false;
     }
     int GetNumCorDecAudio();
     void SetReverbEffect(const bool bNER) {

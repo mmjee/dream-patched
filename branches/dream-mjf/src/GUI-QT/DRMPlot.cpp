@@ -102,17 +102,17 @@ CDRMPlot::CDRMPlot(QWidget* parent, QwtPlot* SuppliedPlot) :
 	plot->setAxisFont(QwtPlot::xBottom, axisfont);
 	plot->setAxisFont(QwtPlot::yLeft, axisfont);
 	plot->setAxisFont(QwtPlot::yRight, axisfont);
-    QwtText title;
-    title.setFont(titlefont);
-    plot->setTitle(title);
+	QwtText title;
+	title.setFont(titlefont);
+	plot->setTitle(title);
 
 	/* Axis titles */
-    bottomTitle.setFont(axisfont);
-    plot->setAxisTitle(QwtPlot::xBottom, bottomTitle);
-    leftTitle.setFont(axisfont);
-    plot->setAxisTitle(QwtPlot::yLeft, leftTitle);
-    rightTitle.setFont(axisfont);
-    plot->setAxisTitle(QwtPlot::yRight, rightTitle);
+	bottomTitle.setFont(axisfont);
+	plot->setAxisTitle(QwtPlot::xBottom, bottomTitle);
+	leftTitle.setFont(axisfont);
+	plot->setAxisTitle(QwtPlot::yLeft, leftTitle);
+	rightTitle.setFont(axisfont);
+	plot->setAxisTitle(QwtPlot::yRight, rightTitle);
 
 	/* Global frame */
 	plot->setFrameStyle(QFrame::Plain|QFrame::NoFrame);
@@ -1164,7 +1164,7 @@ void CDRMPlot::SetBWMarker(const _REAL rBWCenter, const _REAL rBWWidth)
 {
 	double	dX[2], dY[2];
     double* dblptr = nullptr;
-	/* Insert marker for filter bandwidth if required */
+    /* Insert marker for filter bandwidth if required */
 	if (rBWWidth != (_REAL) 0.0)
 	{
         dX[0] = pDRMRec->ConvertFrequency(

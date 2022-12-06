@@ -35,6 +35,7 @@
 #include "sound/soundinterface.h"
 #ifdef QT_MULTIMEDIA_LIB
 #include <QIODevice>
+#include <QAudioOutput>
 #endif
 #include "Parameter.h"
 #include "util/Modul.h"
@@ -57,7 +58,7 @@
 /* Normalization constant for two mixed signals. If this constant is 2, no
    overrun of the "short" variable can happen but signal has quite much lower
    power -> compromise */
-#define MIX_OUT_CHAN_NORM_CONST (real(1.0) / sqrt(real(2.0)))
+#define MIX_OUT_CHAN_NORM_CONST ((_REAL) 1.0 / sqrt((_REAL) 2.0))
 
 
 /* Classes ********************************************************************/
@@ -152,7 +153,8 @@ public:
 
 protected:
 #ifdef QT_MULTIMEDIA_LIB
-    QIODevice*              pIODevice;
+    QAudioOutput* pAudioOutput;
+    QIODevice* pIODevice;
 #endif
     CSoundOutInterface* pSound;
     std::string                  soundDevice;

@@ -124,8 +124,9 @@ CParameter::CParameter():
     iAudSampleRate(DEFAULT_SOUNDCRD_SAMPLE_RATE),
     iSigSampleRate(DEFAULT_SOUNDCRD_SAMPLE_RATE),
     iSigUpscaleRatio(1),
+    iSigDownscaleRatio(1),
     iNewAudSampleRate(0),
-    iNewSigSampleRate(0),
+    iNewSoundcardSigSampleRate(0),
     iNewSigUpscaleRatio(0),
     rSysSimSNRdB(0.0),
     iFrequency(0),
@@ -143,7 +144,12 @@ CParameter::CParameter():
     GenerateRandomSerialNumber();
     CellMappingTable.MakeTable(eRobustnessMode, eSpectOccup, iSigSampleRate);
     gps_data.set=0;
-    gps_data.status=0;
+#if GPSD_API_MAJOR_VERSION >= 10
+        gps_data.fix.status=0;
+#else
+        gps_data.status=0;
+#endif
+
 #ifdef HAVE_LIBGPS
     gps_data.gps_fd = -1;
 #endif
@@ -237,8 +243,9 @@ CParameter::CParameter(const CParameter& p):
     iAudSampleRate(p.iAudSampleRate),
     iSigSampleRate(p.iSigSampleRate),
     iSigUpscaleRatio(p.iSigUpscaleRatio),
+    iSigDownscaleRatio(p.iSigDownscaleRatio),
     iNewAudSampleRate(p.iNewAudSampleRate),
-    iNewSigSampleRate(p.iNewSigSampleRate),
+    iNewSoundcardSigSampleRate(p.iNewSoundcardSigSampleRate),
     iNewSigUpscaleRatio(p.iNewSigUpscaleRatio),
     rSysSimSNRdB(p.rSysSimSNRdB),
     iFrequency(p.iFrequency),
@@ -347,8 +354,9 @@ CParameter& CParameter::operator=(const CParameter& p)
     iAudSampleRate = p.iAudSampleRate;
     iSigSampleRate = p.iSigSampleRate;
     iSigUpscaleRatio = p.iSigUpscaleRatio;
+    iSigDownscaleRatio = p.iSigDownscaleRatio;
     iNewAudSampleRate = p.iNewAudSampleRate;
-    iNewSigSampleRate = p.iNewSigSampleRate;
+    iNewSoundcardSigSampleRate = p.iNewSoundcardSigSampleRate;
     iNewSigUpscaleRatio = p.iNewSigUpscaleRatio;
     rSysSimSNRdB = p.rSysSimSNRdB;
     iFrequency = p.iFrequency;

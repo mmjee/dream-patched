@@ -471,18 +471,14 @@ void CSoundInPulse::Close_HW()
 void CSoundInPulse::SetBufferSize_HW()
 {
 #ifdef PA_STREAM_FIX_RATE /* used to check for at least version 0.9.8 */
-    if (pa_s) {
-        pa_buffer_attr pa_attr;
-        pa_attr.maxlength = PA_RECORD_MAXLENGTH;			// Maximum length of the buffer.
-        pa_attr.tlength   = uint32_t(-1);								// Playback only: target length of the buffer.
-        pa_attr.prebuf    = uint32_t(-1); 							// Playback only: pre-buffering.
-        pa_attr.minreq    = uint32_t(-1);								// Playback only: minimum request.
-        pa_attr.fragsize  = uint32_t(iBufferSize*BYTES_PER_SAMPLE);	// Recording only: fragment size.
-        if (pa_o_sync(&pa_obj, pa_stream_set_buffer_attr(pa_s, &pa_attr, pa_stream_success_cb, nullptr)) != PA_OK)
-            DEBUG_MSG("CSoundInPulse::SetBufferSize_HW() error\n");
-    } else {
-        DEBUG_MSG("CSoundInPulse::SetBufferSize_HW() no stream established\n");
-    }
+    pa_buffer_attr pa_attr;
+    pa_attr.maxlength = PA_RECORD_MAXLENGTH;			// Maximum length of the buffer.
+    pa_attr.tlength   = uint32_t(-1);								// Playback only: target length of the buffer.
+    pa_attr.prebuf    = uint32_t(-1); 							// Playback only: pre-buffering.
+    pa_attr.minreq    = uint32_t(-1);								// Playback only: minimum request.
+    pa_attr.fragsize  = uint32_t(iBufferSize*BYTES_PER_SAMPLE);	// Recording only: fragment size.
+    if (pa_o_sync(&pa_obj, pa_stream_set_buffer_attr(pa_s, &pa_attr, pa_stream_success_cb, nullptr)) != PA_OK)
+        DEBUG_MSG("CSoundInPulse::SetBufferSize_HW() error\n");
 #endif
 }
 
@@ -856,7 +852,7 @@ bool CSoundInPulse::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocki
     return bChanged;
 }
 
-bool CSoundInPulse::Read(CVector<_SAMPLE>& psData)
+bool CSoundInPulse::Read(CVector<_SAMPLE>& psData, CParameter &Parameters)
 {
 #ifdef ENABLE_STDIN_STDOUT
     /* Stdin support */

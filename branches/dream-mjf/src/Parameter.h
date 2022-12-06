@@ -49,13 +49,16 @@
 #ifdef HAVE_LIBGPS
 # include <gps.h>
 #else
+#   define GPSD_API_MAJOR_VERSION 10
+    typedef struct timespec timespec_t;
     struct gps_fix_t {
-	double time;
+    timespec_t time;
 	double latitude;
 	double longitude;
 	double altitude;
 	double speed;
 	double track;
+    int status;
     };
     struct gps_data_t {
 	uint32_t set;
@@ -67,7 +70,6 @@
 #define STATUS_SET      0x00000100u
 #define SATELLITE_SET   0x00010000u
 	gps_fix_t fix;
-	int    status; 
 	int satellites_used;
     };
 #endif
@@ -791,7 +793,7 @@ public:
     CFrontEndParameters():
             eSMeterCorrectionType(S_METER_CORRECTION_TYPE_CAL_FACTOR_ONLY), rSMeterBandwidth(10000.0),
             rDefaultMeasurementBandwidth(10000.0), bAutoMeasurementBandwidth(true), rCalFactorAM(0.0),
-            rCalFactorDRM(0.0), rIFCentreFreq(12000.0)
+            rCalFactorDRM(0.0), rIFCentreFreq(12000.0), rTunerFrequencyOffset(0.0)
     {}
     CFrontEndParameters(const CFrontEndParameters& p):
             eSMeterCorrectionType(p.eSMeterCorrectionType), rSMeterBandwidth(p.rSMeterBandwidth),
@@ -820,6 +822,7 @@ public:
     _REAL rCalFactorAM;
     _REAL rCalFactorDRM;
     _REAL rIFCentreFreq;
+    _REAL rTunerFrequencyOffset; // tuner frequency - signal centre frequency. Negative => tune front end below desired RF frequency
 
 };
 
@@ -922,13 +925,17 @@ public:
     {
         return iSigUpscaleRatio;
     }
+    int GetSigDownscaleRatio() const
+    {
+        return iSigDownscaleRatio;
+    }
     int GetSoundCardSigSampleRate() const
     {
-        return iSigSampleRate / iSigUpscaleRatio;
+        return iSigSampleRate * iSigDownscaleRatio / iSigUpscaleRatio;
     }
     void SetSoundCardSigSampleRate(int sr)
     {
-        iSigSampleRate = sr * iSigUpscaleRatio;
+        iSigSampleRate = sr * iSigUpscaleRatio / iSigDownscaleRatio;
     }
     void SetNewAudSampleRate(int sr)
     {
@@ -942,18 +949,22 @@ public:
         sr = (sr + 12) / 25 * 25; // <- ok for DRM mode
         iNewAudSampleRate = sr;
     }
-    void SetNewSigSampleRate(int sr)
+    void SetNewSoundcardSigSampleRate(int sr)
     {
         /* Set to the nearest supported sample rate */
         if      (sr < 36000)  sr = 24000;
         else if (sr < 72000)  sr = 48000;
         else if (sr < 144000) sr = 96000;
         else                  sr = 192000;
-        iNewSigSampleRate = sr;
+        iNewSoundcardSigSampleRate = sr;
     }
     void SetNewSigUpscaleRatio(int ratio)
     {
         iNewSigUpscaleRatio = ratio < 2 ? 1 : 2;
+    }
+    void SetNewSigDownscaleRatio(int ratio)
+    {
+        iNewSigDownscaleRatio = ratio < 2 ? 1 : 2;
     }
     /* New sample rate are fetched at init and restart */
     void FetchNewSampleRate()
@@ -963,15 +974,20 @@ public:
             iSigUpscaleRatio = iNewSigUpscaleRatio;
             iNewSigUpscaleRatio = 0;
         }
+        if (iNewSigDownscaleRatio != 0)
+        {
+            iSigDownscaleRatio = iNewSigDownscaleRatio;
+            iNewSigDownscaleRatio = 0;
+        }
         if (iNewAudSampleRate != 0)
         {
             iAudSampleRate = iNewAudSampleRate;
             iNewAudSampleRate = 0;
         }
-        if (iNewSigSampleRate != 0)
+        if (iNewSoundcardSigSampleRate != 0)
         {
-            iSigSampleRate = iNewSigSampleRate * iSigUpscaleRatio;
-            iNewSigSampleRate = 0;
+            iSigSampleRate = iNewSoundcardSigSampleRate * iSigUpscaleRatio / iSigDownscaleRatio;
+            iNewSoundcardSigSampleRate = 0;
         }
     }
 
@@ -1199,9 +1215,11 @@ protected:
     int iAudSampleRate;
     int iSigSampleRate;
     int iSigUpscaleRatio;
+    int iSigDownscaleRatio;
     int iNewAudSampleRate;
-    int iNewSigSampleRate;
+    int iNewSoundcardSigSampleRate;
     int iNewSigUpscaleRatio;
+    int iNewSigDownscaleRatio;
 
     _REAL rSysSimSNRdB;
 

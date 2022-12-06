@@ -367,7 +367,7 @@ protected:
 	ECodScheme		eLastMSCCodingScheme;
 	bool		bLastAudioDecoder;
 
-    QwtText			leftTitle, rightTitle, bottomTitle;
+	QwtText			leftTitle, rightTitle, bottomTitle;
 
 	QwtPlotCurve	main1curve, main2curve;
 	QwtPlotCurve	curve1, curve2, curve3, curve4, curve5;

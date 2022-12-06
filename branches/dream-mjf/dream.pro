@@ -136,9 +136,16 @@ contains(QT,gui) {
         src/GUI-QT/main.cpp
 }
 message($$VERSION_MESSAGE $$DEBUG_MESSAGE $$UI_MESSAGE)
-unix:!cross_compile {
+unix {
+  cross_compile {
     UNAME = $$system(uname -s)
     message(building on $$UNAME)
+    message(building for $$QMAKESPEC)
+  }
+  else {
+    UNAME = $$system(uname -s)
+    message(building on $$UNAME for this platform)
+  }
 }
 macx {
     contains(QT, core) {
@@ -176,9 +183,6 @@ macx {
 }
 linux-* {
   LIBS += -ldl -lrt
-  packagesExist(fdk-aac) {
-     CONFIG += fdk-aac
-  }
 }
 android {
     CONFIG += sound fdk-aac
@@ -193,7 +197,7 @@ unix {
     documentation.files = linux/dream.1
     INSTALLS += documentation
     INSTALLS += target
-    CONFIG += link_pkgconfig
+    CONFIG += link_pkgconfig fdk-aac
     LIBS += -lfftw3 -lz
     SOURCES += src/linux/Pacer.cpp
     DEFINES += HAVE_DLFCN_H \
@@ -267,9 +271,17 @@ unix:!cross_compile {
        CONFIG += speexdsp
       }
     }
+    exists(/usr/include/SoapySDR) | \
+    exists($$PREFIX/include/SoapySDR) {
+       CONFIG += soapysdr
+    }
 }
-contains(QMAKE_CC, i686-w64-mingw32.static-gcc) {
+win32:cross_compile {
+  message(win32 cross compile)
   CONFIG += mxe
+  target.path = $$absolute_path(../..)/usr/$$replace(QMAKE_CC,-gcc,)/bin
+  INSTALLS += target
+  message($$target.path)
 }
 win32 {
   CONFIG += fdk-aac
@@ -295,8 +307,8 @@ win32 {
   else {
 	DEFINES += NOMINMAX
         QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:libcmtd.lib
-        QMAKE_LFLAGS_DEBUG += /NODEFAULTLIB:libcmtd.lib
-        QMAKE_LFLAGS_DEBUG += /NODEFAULTLIB:libcmt.lib
+	QMAKE_LFLAGS_DEBUG += /NODEFAULTLIB:libcmtd.lib
+	QMAKE_LFLAGS_DEBUG += /NODEFAULTLIB:libcmt.lib
         LIBS += -lzlib1 -llibfftw3-3
   }
   mxe {
@@ -443,7 +455,9 @@ pulseaudio {
     SOURCES += src/sound/drm_pulseaudio.cpp
     unix {
         macx {
-            INCLUDEPATH += /usr/local/opt/pulseaudio/include
+#            INCLUDEPATH += /usr/local/Cellar/pulseaudio/12.2/include
+            INCLUDEPATH += $$PREFIX/opt/pulseaudio/include
+#            LIBS += -L/usr/local/Cellar/pulseaudio/12.2/lib -lpulse
             LIBS += -L$$PREFIX/opt/pulseaudio/lib -lpulse
         }
         else {
@@ -455,6 +469,12 @@ pulseaudio {
     }
     message("with pulseaudio")
 }
+soapysdr {
+    DEFINES += USE_SOAPYSDR
+    LIBS += -lSoapySDR
+    message("with SoapySDR")
+}
+
 HEADERS += \
     src/AMDemodulation.h \
     src/AMSSDemodulation.h \
@@ -541,7 +561,6 @@ HEADERS += \
     src/ServiceInformation.h \
     src/sound/audiofilein.h \
     src/sound/selectioninterface.h \
-    src/sound/sound.h \
     src/sound/soundinterface.h \
     src/sound/soundnull.h \
     src/sourcedecoders/aac_codec.h \
@@ -587,7 +606,12 @@ HEADERS += \
     src/resample/cspectrumresample.h \
     src/resample/caudioresample.h \
     src/sourcedecoders/reverb.h \
-    src/sourcedecoders/caudioreverb.h
+    src/sourcedecoders/caudioreverb.h \
+    src/sound/drm_soapySDR.h \
+    src/tuner.h \
+    src/sound/soundinterfacefactory.h \
+    src/sound/SoundInInterfaceComposite.h #\
+#    src/AudioInputFactory.h
 SOURCES += \
     src/AMDemodulation.cpp \
     src/AMSSDemodulation.cpp \
@@ -704,7 +728,12 @@ SOURCES += \
     src/resample/cspectrumresample.cpp \
     src/resample/caudioresample.cpp \
     src/sourcedecoders/reverb.cpp \
-    src/sourcedecoders/caudioreverb.cpp
+    src/sourcedecoders/caudioreverb.cpp \
+    src/sound/drm_soapySDR.cpp \
+    src/tuner.cpp \
+    src/sound/soundinterfacefactory.cpp \
+    src/sound/SoundInInterfaceComposite.cpp #\
+#    src/AudioInputFactory.cpp
 
 contains(QT,core) {
     HEADERS += \

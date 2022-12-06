@@ -28,6 +28,7 @@
  *
 \******************************************************************************/
 
+#include "QtCore/qobjectdefs.h"
 #ifdef _WIN32
 # include <windows.h>
 #endif
@@ -48,9 +49,11 @@
 #include <QCoreApplication>
 #include <QTranslator>
 #include <QThread>
+#include <QObject>
 
 #include "../main-Qt/crx.h"
 #include "../main-Qt/ctx.h"
+//#include "../AudioInputFactory.h"
 
 int
 main(int argc, char **argv)
@@ -68,9 +71,11 @@ main(int argc, char **argv)
 
         string mode = Settings.Get("command", "mode", string());
         if (mode == "receive")
-        {
+        {            
             CDRMSimulation DRMSimulation;
             CDRMReceiver DRMReceiver(&Settings);
+
+            //CAudioInputFactory AudioInputFactory(DRMReceiver.ReceiveData);
 
             DRMSimulation.SimScript();
             DRMReceiver.LoadSettings();

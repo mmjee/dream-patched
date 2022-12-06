@@ -151,8 +151,8 @@ ETypeRxStatus Reverb::apply(bool bCurBlockOK, bool bCurBlockFaulty, CVector<_REA
     OldRight.Init(iResOutBlockSize);
     for (int i = 0; i < iResOutBlockSize; i++)
     {
-        OldLeft[i] = tempLeft[ulong(i)];
-        OldRight[i] = tempRight[ulong(i)];
+        OldLeft[i] = tempLeft[i];
+        OldRight[i] = tempRight[i];
     }
 
     return status;

@@ -78,7 +78,7 @@
 
 
 /* Classes ********************************************************************/
-class CRig;
+class CTuner;
 class CSettings;
 
 class CSplitFAC : public CSplitModul<_BINARY>
@@ -187,11 +187,10 @@ public:
     void					SetAMDemodType(EDemodType);
     void					SetAMFilterBW(int iBw);
     void					SetAMDemodAcq(_REAL rNewNorCen);
-#ifdef HAVE_LIBHAMLIB
-    void	 				SetRig(CRig* n) {
-        pRig=n;
+    void                    SetRig(CTuner *p) {
+        pRig=p;
     }
-#endif
+
     void	 				SetFrequency(int);
     int		 				GetFrequency() {
         return Parameters.GetFrequency();
@@ -328,6 +327,7 @@ public:
     void					InitReceiverMode();
     void					SetInStartMode();
     void                    CloseSoundInterfaces();
+    //CReceiveData			ReceiveData;
 
 protected:
 
@@ -447,9 +447,8 @@ protected:
     int						iBwCW;
     int						iBwFM;
     time_t					time_keeper;
-#ifdef HAVE_LIBHAMLIB
-    CRig*					pRig;
-#endif
+    CTuner*					pTuner;
+    CTuner*                 pRig;
 
     CPlotManager			PlotManager;
     std::string					rsiOrigin;

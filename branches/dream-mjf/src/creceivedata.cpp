@@ -30,14 +30,19 @@
 #include "Parameter.h"
 #ifdef QT_MULTIMEDIA_LIB
 # include <QSet>
+# include <QThread>
+# include <QTimer>
+# include <QEventLoop>
 #else
-# include "sound/sound.h"
+# include "sound/soundinterfacefactory.h"
 #endif
 #include "sound/audiofilein.h"
 #include "util/FileTyper.h"
 #include "IQInputFilter.h"
 #include "UpsampleFilter.h"
 #include "matlib/MatlibSigProToolbox.h"
+#include "tuner.h"
+//#include "AudioInputFactory.h"
 
 using namespace std;
 
@@ -51,12 +56,14 @@ inline _REAL sample2real(_SAMPLE s) {
 
 CReceiveData::CReceiveData() :
 #ifdef QT_MULTIMEDIA_LIB
+    pAudioInput(nullptr),
     pIODevice(nullptr),
 #endif
     pSound(nullptr),
     vecrInpData(INPUT_DATA_VECTOR_SIZE, 0.0),
     bFippedSpectrum(false), eInChanSelection(CS_MIX_CHAN), iPhase(0),spectrumAnalyser()
-{}
+{
+}
 
 CReceiveData::~CReceiveData()
 {
@@ -65,9 +72,21 @@ CReceiveData::~CReceiveData()
 void CReceiveData::Stop()
 {
 #ifdef QT_MULTIMEDIA_LIB
-    if(pIODevice!=nullptr) pIODevice->close();
+//    AudioInterfaceStop();
+    if(pIODevice!=nullptr) {
+        pIODevice->close();
+//        pIODevice = nullptr;
+    }
+    if(pAudioInput != nullptr) {
+        pAudioInput->stop();
+//        delete pAudioInput;
+//        pAudioInput = nullptr;
+    }
 #endif
-    if(pSound!=nullptr) pSound->Close();
+    if(pSound!=nullptr) {
+        pSound->Close();
+        pSound = nullptr;
+    }
 }
 
 void CReceiveData::Enumerate(vector<string>& names, vector<string>& descriptions, string& defaultInput)
@@ -91,7 +110,7 @@ void CReceiveData::Enumerate(vector<string>& names, vector<string>& descriptions
         }
     }
 #else
-    if(pSound==nullptr) pSound = new CSoundIn;
+    if(pSound==nullptr) pSound = CSoundInterfaceFactory::CreateSoundInInterface();
     pSound->Enumerate(names, descriptions, defaultInput);
 #endif
 }
@@ -116,9 +135,15 @@ CReceiveData::SetSoundInterface(string device)
         }
         pSound = pAudioFileIn;
 #ifdef QT_MULTIMEDIA_LIB
+//        AudioInterfaceStop();
         if(pIODevice!=nullptr) {
             pIODevice->close();
-            pIODevice = nullptr;
+//            pIODevice = nullptr;
+        }
+       if(pAudioInput != nullptr) {
+            pAudioInput->stop();
+//            delete pAudioInput;
+//            pAudioInput = nullptr;
         }
 #endif
     }
@@ -137,8 +162,11 @@ CReceiveData::SetSoundInterface(string device)
             if(device == di.deviceName().toStdString()) {
                 QAudioFormat nearestFormat = di.nearestFormat(format);
                 pAudioInput = new QAudioInput(di, nearestFormat);
-                //pAudioInput->setBufferSize(2560); //mjf - 02May19 - added buffer size for uniformity
+                //AudioInterfaceCreate(di,format);
+                //AudioInterfaceStart();
+                /* section moved here from DateIO.cpp by mjf to prevent crashing when changing inputs */
                 pIODevice = pAudioInput->start();
+
                 if(pAudioInput->error()==QAudio::NoError)
                 {
                     if(pIODevice->open(QIODevice::ReadOnly)) {
@@ -152,11 +180,16 @@ CReceiveData::SetSoundInterface(string device)
                 {
                     qDebug("Can't open audio input");
                 }
+                /* section added by mjf to prevent crashing when changing inputs */
+
                 break;
             }
         }
+        if(pAudioInput == nullptr) {
+            qDebug("can't find audio input %s", device.c_str());
+        }
 #else
-        pSound = new CSoundIn();
+        pSound = CSoundInterfaceFactory::CreateSoundInInterface();
         pSound->SetDev(device);
 #endif
     }
@@ -183,30 +216,60 @@ void CReceiveData::ProcessDataInternal(CParameter& Parameters)
 
     /* Get data from sound interface. The read function must be a
        blocking function! */
-    bool bBad = true;
 
 #ifdef QT_MULTIMEDIA_LIB
+    bool bBad = false;
     if(pIODevice)
     {
+#if 0
+
+        QTimer timer;
+        timer.setSingleShot(true);
+        QEventLoop loop;
+        QObject::connect(pIODevice,  SIGNAL(readyRead()), &loop, SLOT(quit()) );
+        QObject::connect(&timer, SIGNAL(timeout()), &loop, SLOT(quit()));
+        timer.start(1000);
+        loop.exec();
+
+        if(timer.isActive()) {
+            //qDebug("data from sound card");
+            qint64 n = 2*vecsSoundBuffer.Size();
+            qint64 r = pIODevice->read(reinterpret_cast<char*>(&vecsSoundBuffer[0]), n);
+            if(r!=n) {
+                cerr << "short read" << endl;
+            }
+        }
+        else {
+            qDebug("timeout");
+        }
+
+#else
         qint64 n = 2*vecsSoundBuffer.Size();
-        qint64 m = 0;
-        CVector<_SAMPLE> tmpBuffer;
-        tmpBuffer.Init(int(n));
-        while ((m > -1) && (m < n)) { //mjf - 04May19 - wait until device buffer has enough data or fails
-            m = pIODevice->peek(reinterpret_cast<char*>(&tmpBuffer[0]), n);
-        }
-        if (m >= n) {
-            m = pIODevice->read(reinterpret_cast<char*>(&vecsSoundBuffer[0]), n);
-        }
-        bBad = (m==-1); //mjf - 01May19 - make bBad only if read() fails
+        qint64 mwait = trunc(n / (2 * iSampleRate/1000));
+        char *p = reinterpret_cast<char*>(&vecsSoundBuffer[0]);
+        do {
+            qint64 r = pIODevice->read(p, n);
+            if(r>0) {
+                p += r;
+                n -= r;
+            }
+            else {
+                QThread::msleep(mwait);
+            }
+        } while (n>0);
+#endif
     }
     else if (pSound != nullptr) { // for audio files
-        bBad = pSound->Read(vecsSoundBuffer);
+        bBad = pSound->Read(vecsSoundBuffer, Parameters);
+    }
+    else {
+      bBad = true;
     }
 #else
+    bool bBad = true;
     if (pSound != nullptr)
     {
-        bBad = pSound->Read(vecsSoundBuffer);
+        bBad = pSound->Read(vecsSoundBuffer, Parameters);
     }
 #endif
 
@@ -223,6 +286,15 @@ void CReceiveData::ProcessDataInternal(CParameter& Parameters)
         /* The actual upscaling, currently only 2X is supported */
         InterpFIR_2X(2, &vecsSoundBuffer[0], vecf_ZL, vecf_YL, vecf_B);
         InterpFIR_2X(2, &vecsSoundBuffer[1], vecf_ZR, vecf_YR, vecf_B);
+    }
+    else if (iDownscaleRatio > 1)
+    {
+        /* The actual downscaling, currently only 2X is supported */
+        DecimFIR_2X(2, &vecsSoundBuffer[0], vecf_ZL, vecf_YL, vecf_B);
+        DecimFIR_2X(2, &vecsSoundBuffer[1], vecf_ZR, vecf_YR, vecf_B);
+    }
+    if (iUpscaleRatio > 1 || iDownscaleRatio >1)
+    {
 
         /* Write data to output buffer. Do not set the switch command inside
            the for-loop for efficiency reasons */
@@ -475,7 +547,7 @@ void CReceiveData::InitInternal(CParameter& Parameters)
            Use stereo input (* 2) */
 
 #ifdef QT_MULTIMEDIA_LIB
-    if (pSound == nullptr && pIODevice == nullptr)
+    if (pSound == nullptr && pAudioInput == nullptr)
         return;
 #else
     if (pSound == nullptr)
@@ -493,6 +565,7 @@ void CReceiveData::InitInternal(CParameter& Parameters)
     /* Get signal sample rate */
     iSampleRate = Parameters.GetSigSampleRate();
     iUpscaleRatio = Parameters.GetSigUpscaleRatio();
+    iDownscaleRatio = Parameters.GetSigDownscaleRatio();
     Parameters.Unlock();
 
     const int iOutputBlockAlignment = iOutputBlockSize & 3;
@@ -501,8 +574,30 @@ void CReceiveData::InitInternal(CParameter& Parameters)
     }
 
     try {
-        const bool bChanged = (pSound==nullptr)?true:pSound->Init(iSampleRate / iUpscaleRatio, iOutputBlockSize * 2 / iUpscaleRatio, true);
 
+
+        bool bChanged = false;
+        int wantedBufferSize = iOutputBlockSize * 2 * iDownscaleRatio / iUpscaleRatio; // samples
+
+#ifdef QT_MULTIMEDIA_LIB
+        if(pSound) { // must be sound file
+            bChanged = (pSound==nullptr)?true:pSound->Init(iSampleRate / iUpscaleRatio, wantedBufferSize, true);
+        }
+        else {
+            pAudioInput->setBufferSize(2*wantedBufferSize); // bytes * expected frame imput size
+            pIODevice = pAudioInput->start();
+            //AudioInterfaceStart();
+            cerr << "sound card buffer size requested " << 2*wantedBufferSize << " actual " << pAudioInput->bufferSize() << endl;
+            if(pAudioInput->error()!=QAudio::NoError)
+            {
+                qDebug("Can't open audio input");
+            }
+            bChanged = true; // TODO
+        }
+
+#else
+        bChanged = (pSound==nullptr)?true:pSound->Init(iSampleRate * iDownscaleRatio / iUpscaleRatio, wantedBufferSize, true);
+#endif
         /* Clear input data buffer on change samplerate change */
         if (bChanged)
             ClearInputData();
@@ -524,6 +619,22 @@ void CReceiveData::InitInternal(CParameter& Parameters)
             vecf_YL.resize(unsigned(iOutputBlockSize));
             vecf_YR.resize(unsigned(iOutputBlockSize));
         }
+        else if (iDownscaleRatio > 1)
+        {
+            const int taps = (NUM_TAPS_DOWNSAMPLE_FILT + 3) & ~3;
+            vecf_B.resize(taps, 0.0f);
+            for (unsigned i = 0; i < NUM_TAPS_DOWNSAMPLE_FILT; i++)
+                vecf_B[i] = float(dDownsampleFilt[i] / iDownscaleRatio);
+            if (bChanged)
+            {
+                vecf_ZL.resize(0);
+                vecf_ZR.resize(0);
+            }
+            vecf_ZL.resize(unsigned(iOutputBlockSize * 2 + taps), 0.0f);
+            vecf_ZR.resize(unsigned(iOutputBlockSize *2 + taps), 0.0f);
+            vecf_YL.resize(unsigned(iOutputBlockSize));
+            vecf_YR.resize(unsigned(iOutputBlockSize));
+        }
         else
         {
             vecf_B.resize(0);
@@ -534,7 +645,7 @@ void CReceiveData::InitInternal(CParameter& Parameters)
         }
 
         /* Init buffer size for taking stereo input */
-        vecsSoundBuffer.Init(iOutputBlockSize * 2 / iUpscaleRatio);
+        vecsSoundBuffer.Init(iOutputBlockSize * 2 * iDownscaleRatio / iUpscaleRatio);
 
         /* Init signal meter */
         SignalLevelMeter.Init(0);
@@ -646,6 +757,55 @@ void CReceiveData::InterpFIR_2X(const int channels, _SAMPLE* X, vector<float>& Z
     }
 }
 
+void CReceiveData::DecimFIR_2X(const int channels, _SAMPLE* X, vector<float>& Z, vector<float>& Y, vector<float>& B)
+{
+    /*
+        2X decimating filter.
+    */
+    int i, j;
+    const int B_len = int(B.size());
+    const int Z_len = int(Z.size());
+    const int Y_len = int(Y.size());
+    const int Y_len_2 = Y_len * 2;
+    float *B_beg_ptr = &B[0];
+    float *Z_beg_ptr = &Z[0];
+    float *Y_ptr = &Y[0];
+    float *B_end_ptr, *B_ptr, *Z_ptr;
+    float y0, y1, y2, y3;
+
+    /* Check for size and alignment requirement */
+    if ((B_len & 3) || Z_len != (B_len + Y_len_2))
+        return;
+
+    /* Copy the old history at the end */
+    for (i = B_len-1; i >= 0; i--)
+        Z_beg_ptr[Y_len_2 + i] = Z_beg_ptr[i];
+
+    /* Copy the new sample at the beginning of the history */
+    for (i = 0, j = 0; i < Y_len_2; i++, j+=channels)
+        Z_beg_ptr[Y_len_2 - i - 1] = X[j];
+
+    /* The actual lowpass filtering using FIR */
+    for (i = Y_len_2-2; i >= 0; i-=2)
+    {
+        B_end_ptr  = B_beg_ptr + B_len;
+        B_ptr      = B_beg_ptr;
+        Z_ptr      = Z_beg_ptr + i;
+        y0 = y1 = y2 = y3 = 0.0f;
+        while (B_ptr != B_end_ptr)
+        {
+            y0 = y0 + B_ptr[0] * Z_ptr[0];
+            y1 = y1 + B_ptr[1] * Z_ptr[1];
+            y2 = y2 + B_ptr[2] * Z_ptr[2];
+            y3 = y3 + B_ptr[3] * Z_ptr[3];
+
+            B_ptr += 4;
+            Z_ptr += 4;
+        }
+        *Y_ptr++ = y0 + y1 + y2 + y3;
+    }
+}
+
 /*
     Convert Real to I/Q frequency when bInvert is false
     Convert I/Q to Real frequency when bInvert is true
@@ -745,4 +905,17 @@ void CReceiveData::emitRSCIData(CParameter& Parameters)
 
     spectrumAnalyser.CalculatePSDInterferenceTag(Parameters, vecrData);
 }
+
+CTuner * CReceiveData::GetTuner()
+{
+ //   fprintf(stderr, "CReceiveData::GetTuner() called, pSound=%x\n", pSound);
+ //   return pSound->GetTuner();
+    if (pSound) {
+        return pSound->GetTuner();
+    }
+    else {
+        return nullptr;
+    }
+}
+
 
